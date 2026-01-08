@@ -624,10 +624,10 @@ binary_f1 = f1_score(y_test, binary_preds, average='macro')
 print(f"\n🎯 Binary Decomposition Accuracy: {binary_acc:.4f}, Macro-F1: {binary_f1:.4f}")
 
 # ============================================================
-# CELL 11: STRATEGY 3 - Deep Learning with Attention
+# CELL 11: STRATEGY 3 - Deep Learning: TFT + Stockformer + Transformer
 # ============================================================
 print("="*60)
-print("🧠 STRATEGY 3: ATTENTION TRANSFORMER")
+print("🧠 STRATEGY 3: DEEP LEARNING ENSEMBLE (TFT + Stockformer + Transformer)")
 print("="*60)
 
 class SwingDatasetV5(Dataset):
@@ -637,18 +637,145 @@ class SwingDatasetV5(Dataset):
     def __len__(self): return len(self.y)
     def __getitem__(self, i): return self.X[i], self.y[i]
 
+# ==================== TFT (Temporal Fusion Transformer) ====================
+class TFTModel(nn.Module):
+    """Temporal Fusion Transformer - Best for time series with variable selection"""
+    def __init__(self, input_dim, hidden=96, heads=6, n_layers=2, dropout=0.15):
+        super().__init__()
+        self.hidden = hidden
+        
+        # Variable Selection Network
+        self.var_sel = nn.Sequential(
+            nn.Linear(input_dim, hidden),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, input_dim),
+            nn.Softmax(dim=-1)
+        )
+        
+        # LSTM for temporal processing
+        self.lstm = nn.LSTM(input_dim, hidden, n_layers, batch_first=True, 
+                           dropout=dropout if n_layers > 1 else 0)
+        
+        # Multi-head attention
+        self.attention = nn.MultiheadAttention(hidden, heads, dropout=dropout, batch_first=True)
+        self.norm1 = nn.LayerNorm(hidden)
+        
+        # Gated Residual Network
+        self.grn = nn.Sequential(
+            nn.Linear(hidden, hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden, hidden)
+        )
+        self.grn_gate = nn.Sequential(nn.Linear(hidden, hidden), nn.Sigmoid())
+        self.norm2 = nn.LayerNorm(hidden)
+        
+        # Output
+        self.output = nn.Linear(hidden, 3)
+    
+    def forward(self, x):
+        # Variable selection
+        weights = self.var_sel(x.mean(dim=1))  # (batch, input_dim)
+        x = x * weights.unsqueeze(1)
+        
+        # LSTM
+        lstm_out, _ = self.lstm(x)
+        
+        # Self-attention
+        attn_out, _ = self.attention(lstm_out, lstm_out, lstm_out)
+        out = self.norm1(lstm_out + attn_out)
+        
+        # Take last timestep
+        final = out[:, -1, :]
+        
+        # GRN
+        grn_out = self.grn_gate(final) * self.grn(final)
+        final = self.norm2(final + grn_out)
+        
+        return self.output(final)
+
+# ==================== Stockformer ====================
+class Stockformer(nn.Module):
+    """Stock-specific Transformer with trend-seasonal decomposition"""
+    def __init__(self, input_dim, d_model=96, n_heads=6, n_layers=2, dropout=0.1):
+        super().__init__()
+        self.d_model = d_model
+        
+        # Separate encoders for trend/seasonal/residual
+        self.trend_enc = nn.Sequential(
+            nn.Linear(input_dim, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU()
+        )
+        self.seasonal_enc = nn.Sequential(
+            nn.Linear(input_dim, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU()
+        )
+        self.residual_enc = nn.Sequential(
+            nn.Linear(input_dim, d_model),
+            nn.LayerNorm(d_model),
+            nn.GELU()
+        )
+        
+        # Positional encoding
+        self.pos_enc = nn.Parameter(torch.randn(1, 60, d_model) * 0.02)
+        
+        # Transformer blocks for each component
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model, nhead=n_heads, 
+            dim_feedforward=d_model*4, dropout=dropout, batch_first=True
+        )
+        self.trend_transformer = nn.TransformerEncoder(encoder_layer, n_layers)
+        self.seasonal_transformer = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model, n_heads, d_model*4, dropout, batch_first=True), n_layers
+        )
+        self.residual_transformer = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(d_model, n_heads, d_model*4, dropout, batch_first=True), n_layers
+        )
+        
+        # Fusion
+        self.fusion = nn.Sequential(
+            nn.Linear(d_model * 3, d_model * 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model * 2, d_model)
+        )
+        
+        self.output = nn.Linear(d_model, 3)
+    
+    def forward(self, x):
+        batch, seq_len, _ = x.shape
+        
+        # Decompose into trend (moving average) and seasonal
+        trend = x.cumsum(dim=1) / torch.arange(1, seq_len+1, device=x.device).view(1, -1, 1)
+        seasonal = x - trend
+        
+        # Encode each component
+        t = self.trend_enc(trend) + self.pos_enc[:, :seq_len]
+        s = self.seasonal_enc(seasonal) + self.pos_enc[:, :seq_len]
+        r = self.residual_enc(x) + self.pos_enc[:, :seq_len]
+        
+        # Transform
+        t = self.trend_transformer(t)[:, -1]
+        s = self.seasonal_transformer(s)[:, -1]
+        r = self.residual_transformer(r)[:, -1]
+        
+        # Fuse
+        fused = self.fusion(torch.cat([t, s, r], dim=-1))
+        return self.output(fused)
+
+# ==================== Simple Attention Transformer ====================
 class AttentionTransformer(nn.Module):
-    def __init__(self, input_dim, hidden=128, heads=4, layers=2, dropout=0.1):
+    def __init__(self, input_dim, hidden=96, heads=4, layers=2, dropout=0.1):
         super().__init__()
         self.input_proj = nn.Linear(input_dim, hidden)
         self.pos_enc = nn.Parameter(torch.randn(1, 60, hidden) * 0.02)
         
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=hidden, 
-            nhead=heads, 
-            dim_feedforward=hidden*4,
-            dropout=dropout,
-            batch_first=True
+            d_model=hidden, nhead=heads, 
+            dim_feedforward=hidden*4, dropout=dropout, batch_first=True
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=layers)
         
@@ -661,13 +788,58 @@ class AttentionTransformer(nn.Module):
         )
     
     def forward(self, x):
-        # x: (batch, seq, features)
         h = self.input_proj(x) + self.pos_enc[:, :x.size(1)]
         h = self.transformer(h)
         h = self.pool(h.permute(0, 2, 1)).squeeze(-1)
         return self.classifier(h)
 
-# Create dataloaders with class weights for balanced sampling
+# ==================== Training Function ====================
+def train_deep_model(model, name, train_loader, val_loader, max_epochs=50, patience=12):
+    print(f"\n🔹 Training {name}...")
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=max_epochs)
+    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+    
+    best_acc, patience_count, best_state = 0, 0, None
+    for epoch in range(max_epochs):
+        model.train()
+        for X_batch, y_batch in train_loader:
+            optimizer.zero_grad()
+            out = model(X_batch.to(DEVICE))
+            loss = criterion(out, y_batch.to(DEVICE))
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+        scheduler.step()
+        
+        model.eval()
+        preds, labels = [], []
+        with torch.no_grad():
+            for X_batch, y_batch in val_loader:
+                out = model(X_batch.to(DEVICE))
+                preds.extend(out.argmax(1).cpu().numpy())
+                labels.extend(y_batch.numpy())
+        
+        acc = np.mean(np.array(preds) == np.array(labels))
+        f1 = f1_score(labels, preds, average='macro')
+        if epoch % 10 == 0 or epoch == max_epochs - 1:
+            print(f"  Epoch {epoch+1}: Acc={acc:.4f}, F1={f1:.4f}")
+        
+        if acc > best_acc:
+            best_acc = acc
+            patience_count = 0
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+        else:
+            patience_count += 1
+            if patience_count >= patience:
+                print(f"  Early stopping at epoch {epoch+1}")
+                break
+    
+    model.load_state_dict(best_state)
+    print(f"✅ {name} Best Val Accuracy: {best_acc:.4f}")
+    return model, best_acc
+
+# Create dataloaders
 train_ds = SwingDatasetV5(X_train_seq, y_train)
 val_ds = SwingDatasetV5(X_val_seq, y_val)
 test_ds = SwingDatasetV5(X_test_seq, y_test)
@@ -680,70 +852,58 @@ train_loader = DataLoader(train_ds, batch_size=64, sampler=sampler)
 val_loader = DataLoader(val_ds, batch_size=64)
 test_loader = DataLoader(test_ds, batch_size=64)
 
-# Train model
-print("\n🔹 Training Attention Transformer...")
 input_dim = len(SELECTED_FEATURES)
+
+# Train all 3 deep learning models
+tft_model = TFTModel(input_dim, hidden=96, heads=6, n_layers=2, dropout=0.15).to(DEVICE)
+tft_model, tft_val_acc = train_deep_model(tft_model, "TFT", train_loader, val_loader)
+
+stockformer_model = Stockformer(input_dim, d_model=96, n_heads=6, n_layers=2, dropout=0.1).to(DEVICE)
+stockformer_model, sf_val_acc = train_deep_model(stockformer_model, "Stockformer", train_loader, val_loader)
+
 attn_model = AttentionTransformer(input_dim, hidden=96, heads=4, layers=2, dropout=0.1).to(DEVICE)
-optimizer = torch.optim.AdamW(attn_model.parameters(), lr=1e-3, weight_decay=0.01)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.MAX_EPOCHS)
-criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+attn_model, attn_val_acc = train_deep_model(attn_model, "Attention Transformer", train_loader, val_loader)
 
-best_acc, patience_count, best_state = 0, 0, None
-for epoch in range(config.MAX_EPOCHS):
-    attn_model.train()
-    for X_batch, y_batch in train_loader:
-        optimizer.zero_grad()
-        out = attn_model(X_batch.to(DEVICE))
-        loss = criterion(out, y_batch.to(DEVICE))
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(attn_model.parameters(), 1.0)
-        optimizer.step()
-    scheduler.step()
-    
-    attn_model.eval()
-    preds, labels = [], []
+# Get test predictions for all models
+def get_test_probs(model, test_loader):
+    model.eval()
+    probs_list = []
     with torch.no_grad():
-        for X_batch, y_batch in val_loader:
-            out = attn_model(X_batch.to(DEVICE))
-            preds.extend(out.argmax(1).cpu().numpy())
-            labels.extend(y_batch.numpy())
-    
-    acc = np.mean(np.array(preds) == np.array(labels))
-    if epoch % 5 == 0:
-        print(f"Epoch {epoch+1}: Val Acc={acc:.4f}")
-    
-    if acc > best_acc:
-        best_acc = acc
-        patience_count = 0
-        best_state = {k: v.cpu().clone() for k, v in attn_model.state_dict().items()}
-    else:
-        patience_count += 1
-        if patience_count >= config.PATIENCE:
-            print(f"Early stopping at epoch {epoch+1}")
-            break
+        for X_batch, _ in test_loader:
+            out = model(X_batch.to(DEVICE))
+            probs = F.softmax(out, dim=1)
+            probs_list.extend(probs.cpu().numpy())
+    return np.array(probs_list)
 
-attn_model.load_state_dict(best_state)
-print(f"✅ Attention Transformer Best Val Accuracy: {best_acc:.4f}")
+tft_probs = get_test_probs(tft_model, test_loader)
+sf_probs = get_test_probs(stockformer_model, test_loader)
+attn_probs = get_test_probs(attn_model, test_loader)
 
-# Get test predictions
-attn_model.eval()
-attn_preds, attn_probs_list = [], []
-with torch.no_grad():
-    for X_batch, _ in test_loader:
-        out = attn_model(X_batch.to(DEVICE))
-        probs = F.softmax(out, dim=1)
-        attn_preds.extend(out.argmax(1).cpu().numpy())
-        attn_probs_list.extend(probs.cpu().numpy())
+tft_acc = (tft_probs.argmax(1) == y_test).mean()
+sf_acc = (sf_probs.argmax(1) == y_test).mean()
+attn_acc = (attn_probs.argmax(1) == y_test).mean()
 
-attn_probs = np.array(attn_probs_list)
-attn_acc = (np.array(attn_preds) == y_test).mean()
-print(f"✅ Attention Transformer Test Accuracy: {attn_acc:.4f}")
+print(f"\n📊 Deep Learning Results:")
+print(f"   TFT Test Accuracy: {tft_acc:.4f}")
+print(f"   Stockformer Test Accuracy: {sf_acc:.4f}")
+print(f"   Attention Transformer Test Accuracy: {attn_acc:.4f}")
+
+# Deep learning ensemble (weighted by validation accuracy)
+total_val = tft_val_acc + sf_val_acc + attn_val_acc
+w_tft = tft_val_acc / total_val
+w_sf = sf_val_acc / total_val
+w_attn = attn_val_acc / total_val
+print(f"\n🔧 Deep Ensemble Weights: TFT={w_tft:.2f}, Stockformer={w_sf:.2f}, Attention={w_attn:.2f}")
+
+deep_probs = w_tft * tft_probs + w_sf * sf_probs + w_attn * attn_probs
+deep_acc = (deep_probs.argmax(1) == y_test).mean()
+print(f"✅ Deep Learning Ensemble Accuracy: {deep_acc:.4f}")
 
 # ============================================================
-# CELL 12: META-LEARNER STACKING
+# CELL 12: META-LEARNER STACKING (6 Models!)
 # ============================================================
 print("="*60)
-print("🏗️ META-LEARNER STACKING")
+print("🏗️ META-LEARNER STACKING (6 Models)")
 print("="*60)
 
 # Get validation predictions for stacking
@@ -757,17 +917,27 @@ if HAS_XGB:
 else:
     xgb_val_probs = cat_val_probs
 
-attn_model.eval()
-attn_val_probs = []
-with torch.no_grad():
-    for X_batch, _ in DataLoader(SwingDatasetV5(X_val_seq, y_val), batch_size=64):
-        out = F.softmax(attn_model(X_batch.to(DEVICE)), dim=1)
-        attn_val_probs.extend(out.cpu().numpy())
-attn_val_probs = np.array(attn_val_probs)
+# Get deep learning validation probs
+def get_val_probs(model, val_seq, val_labels):
+    model.eval()
+    probs_list = []
+    loader = DataLoader(SwingDatasetV5(val_seq, val_labels), batch_size=64)
+    with torch.no_grad():
+        for X_batch, _ in loader:
+            out = F.softmax(model(X_batch.to(DEVICE)), dim=1)
+            probs_list.extend(out.cpu().numpy())
+    return np.array(probs_list)
 
-# Stack predictions
-X_meta_val = np.hstack([cat_val_probs, lgb_val_probs, xgb_val_probs, attn_val_probs])
-X_meta_test = np.hstack([cat_probs, lgb_probs, xgb_probs, attn_probs])
+tft_val_probs = get_val_probs(tft_model, X_val_seq, y_val)
+sf_val_probs = get_val_probs(stockformer_model, X_val_seq, y_val)
+attn_val_probs = get_val_probs(attn_model, X_val_seq, y_val)
+
+# Stack ALL 6 model predictions (3 GBDT + 3 Deep Learning)
+X_meta_val = np.hstack([cat_val_probs, lgb_val_probs, xgb_val_probs, 
+                        tft_val_probs, sf_val_probs, attn_val_probs])
+X_meta_test = np.hstack([cat_probs, lgb_probs, xgb_probs,
+                         tft_probs, sf_probs, attn_probs])
+print(f"📊 Meta-features shape: {X_meta_val.shape} (6 models × 3 classes = 18 features)")
 
 # Train meta-learner (Logistic Regression)
 print("\n🔹 Training Meta-Learner...")
@@ -790,18 +960,23 @@ meta_f1 = f1_score(y_test, meta_preds, average='macro')
 print(f"✅ Meta-Learner Accuracy: {meta_acc:.4f}, Macro-F1: {meta_f1:.4f}")
 
 # ============================================================
-# CELL 13: FINAL COMPARISON
+# CELL 13: FINAL COMPARISON - ALL 8 STRATEGIES
 # ============================================================
 print("\n" + "="*60)
 print("📊 FINAL COMPARISON - ALL STRATEGIES")
 print("="*60)
 
 results = {
-    "CatBoost": (cat_probs.argmax(1) == y_test).mean(),
+    "CatBoost": cat_acc,
+    "LightGBM": (lgb_probs.argmax(1) == y_test).mean() if HAS_LGB else 0,
+    "XGBoost": (xgb_probs.argmax(1) == y_test).mean() if HAS_XGB else 0,
     "GBDT Ensemble": gbdt_acc,
-    "Binary Decomposition": binary_acc,
+    "TFT": tft_acc,
+    "Stockformer": sf_acc,
     "Attention Transformer": attn_acc,
-    "Meta-Learner Stack": meta_acc,
+    "Deep Ensemble": deep_acc,
+    "Binary Decomposition": binary_acc,
+    "Meta-Learner Stack (6 models)": meta_acc,
 }
 
 print("\n🏆 ACCURACY RANKING:")
@@ -811,13 +986,19 @@ for i, (name, acc) in enumerate(sorted(results.items(), key=lambda x: -x[1])):
 
 # Best model for final evaluation
 best_name = max(results, key=results.get)
-best_probs = {
+best_probs_dict = {
     "CatBoost": cat_probs,
+    "LightGBM": lgb_probs,
+    "XGBoost": xgb_probs,
     "GBDT Ensemble": gbdt_probs,
-    "Binary Decomposition": None,  # Not probability-based
+    "TFT": tft_probs,
+    "Stockformer": sf_probs,
     "Attention Transformer": attn_probs,
-    "Meta-Learner Stack": meta_probs,
-}[best_name]
+    "Deep Ensemble": deep_probs,
+    "Binary Decomposition": None,  # Not probability-based
+    "Meta-Learner Stack (6 models)": meta_probs,
+}
+best_probs = best_probs_dict.get(best_name)
 
 if best_probs is not None:
     best_preds = best_probs.argmax(1)
@@ -853,27 +1034,40 @@ drive.mount('/content/drive')
 os.makedirs(config.MODEL_SAVE_PATH, exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-print("💾 Saving V5 models...")
+print("💾 Saving V5 models (6 total)...")
+
+# GBDT Models
 catboost_model.save_model(f"{config.MODEL_SAVE_PATH}catboost_v5.cbm")
-up_model.save_model(f"{config.MODEL_SAVE_PATH}up_detector_v5.cbm")
-down_model.save_model(f"{config.MODEL_SAVE_PATH}down_detector_v5.cbm")
-torch.save(attn_model.state_dict(), f"{config.MODEL_SAVE_PATH}attention_v5.pt")
-
-import pickle
-with open(f"{config.MODEL_SAVE_PATH}meta_learner_v5.pkl", "wb") as f:
-    pickle.dump({'model': meta_model, 'scaler': scaler}, f)
-
 if HAS_LGB:
     lgb_model.save_model(f"{config.MODEL_SAVE_PATH}lightgbm_v5.txt")
 if HAS_XGB:
     xgb_model.save_model(f"{config.MODEL_SAVE_PATH}xgboost_v5.json")
 
+# Deep Learning Models
+torch.save(tft_model.state_dict(), f"{config.MODEL_SAVE_PATH}tft_v5.pt")
+torch.save(stockformer_model.state_dict(), f"{config.MODEL_SAVE_PATH}stockformer_v5.pt")
+torch.save(attn_model.state_dict(), f"{config.MODEL_SAVE_PATH}attention_v5.pt")
+
+# Binary Decomposition
+up_model.save_model(f"{config.MODEL_SAVE_PATH}up_detector_v5.cbm")
+down_model.save_model(f"{config.MODEL_SAVE_PATH}down_detector_v5.cbm")
+
+# Meta-learner
+import pickle
+with open(f"{config.MODEL_SAVE_PATH}meta_learner_v5.pkl", "wb") as f:
+    pickle.dump({'model': meta_model, 'scaler': scaler}, f)
+
+# Convert numpy types for JSON serialization
+results_json = {k: float(v) for k, v in results.items()}
+
 model_config = {
-    "version": "V5_Advanced",
-    "strategies": ["GBDT_Ensemble", "Binary_Decomposition", "Attention_Transformer", "Meta_Stacking"],
+    "version": "V5_Advanced_6Models",
+    "models": ["CatBoost", "LightGBM", "XGBoost", "TFT", "Stockformer", "AttentionTransformer"],
+    "strategies": ["GBDT_Ensemble", "Deep_Ensemble", "Binary_Decomposition", "Meta_Stacking"],
     "feature_columns": SELECTED_FEATURES,
     "best_model": best_name,
-    "results": results,
+    "results": results_json,
+    "deep_weights": {"tft": float(w_tft), "stockformer": float(w_sf), "attention": float(w_attn)},
     "trained_at": timestamp
 }
 with open(f"{config.MODEL_SAVE_PATH}model_config_v5.json", "w") as f:
