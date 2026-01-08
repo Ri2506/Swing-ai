@@ -85,9 +85,9 @@ class ConfigV5:
     TRAIN_END: str = "2024-06-30"
     VAL_END: str = "2024-09-30"
     
-    # Reduced feature set (top 30 most important)
-    USE_FEATURE_SELECTION: bool = True
-    TOP_N_FEATURES: int = 30
+    # Feature selection - Set to False to use ALL 40 features
+    USE_FEATURE_SELECTION: bool = False  # DISABLED - Use all SMC/ICT, MTF, TA features
+    TOP_N_FEATURES: int = 40  # All features
     
     BATCH_SIZE: int = 64
     MAX_EPOCHS: int = 50
