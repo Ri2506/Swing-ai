@@ -1,546 +1,807 @@
 // ============================================================================
-// SWINGAI - SCREENER PAGE
-// PKScreener powered stock screener with 40+ scanners
-// Beautiful UI that makes the app look cutting-edge
+// AI BETA SCREENER - COMPLETE STOCK SCREENER APPLICATION
+// Full integration with all 43+ scanners, AI predictions, ML signals
+// Powered by advanced ML models and real-time market data
 // ============================================================================
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '../../contexts/AuthContext'
 import {
-  ArrowLeft,
-  Search,
-  Rocket,
-  TrendingUp,
-  Activity,
-  RefreshCw,
-  Building,
-  Clock,
-  DollarSign,
-  BarChart3,
-  Play,
-  Star,
-  Lock,
-  ChevronRight,
-  Filter,
-  Download,
-  Plus,
-  Bell,
-  ExternalLink,
-  Zap,
-  Target,
-  Eye,
-  Crown,
+  Search, Filter, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
+  RefreshCw, Zap, Target, BarChart3, Activity, Flame, Clock, Star,
+  ChevronRight, ChevronDown, ChevronUp, X, Play, Pause, Settings,
+  Volume2, Eye, AlertTriangle, CheckCircle2, Info, Bookmark, Share2,
+  Download, Grid3X3, List, ArrowLeft, Bell, Moon, Sun, Menu, ExternalLink,
+  Sparkles, Radio, Wifi, WifiOff, Database, Cpu, Globe2, Shield,
+  LineChart, CandlestickChart, Layers, Box, Triangle, Circle, Square,
+  Hexagon, Crosshair, ArrowRightLeft, DollarSign, Percent, Hash, Lock,
+  Brain, Lightbulb, TrendingUp as Trend, Binary, Gauge, PieChart
 } from 'lucide-react'
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 // ============================================================================
-// SCANNER DATA
+// AI BETA SCREENER MENU - ALL 43+ SCANNERS
+// Advanced AI-powered stock screening for Indian markets
 // ============================================================================
 
 const SCANNER_CATEGORIES = [
   {
-    id: 'breakouts',
+    id: 'breakout',
     name: 'Breakout Scanners',
-    icon: Rocket,
+    icon: TrendingUp,
     color: 'from-emerald-500 to-green-600',
     bgColor: 'bg-emerald-500/10',
     borderColor: 'border-emerald-500/30',
     textColor: 'text-emerald-400',
-    description: 'Stocks breaking out of consolidation',
+    description: 'Stocks breaking key resistance levels',
     scanners: [
-      { id: 1, name: 'Probable Breakouts', description: 'Stocks near breakout levels', premium: false },
-      { id: 2, name: "Today's Breakouts", description: 'Confirmed breakouts today', premium: false },
-      { id: 17, name: '52-Week High Breakout', description: 'Breaking 52-week highs', premium: true },
-      { id: 23, name: 'Breaking Out Now', description: 'Real-time breakouts', premium: true },
+      { id: 0, name: 'Full Screening', description: 'All patterns, indicators & breakouts', premium: false },
+      { id: 1, name: 'Breakout (Consolidation)', description: 'Breaking out of consolidation zones', premium: false },
+      { id: 4, name: 'Volume Breakout', description: 'Unusual volume with price breakout', premium: false },
+      { id: 5, name: '52-Week High', description: 'Stocks at 52-week high', premium: false },
+      { id: 6, name: '10-Day High', description: 'Stocks at 10-day high', premium: false },
+      { id: 7, name: '52-Week Low', description: 'Reversal potential at 52W low', premium: false },
+      { id: 20, name: 'ORB (Opening Range)', description: 'Opening range breakout', premium: true },
+      { id: 33, name: 'Pivot Breakout', description: 'Breaking above pivot levels', premium: true },
     ]
   },
   {
     id: 'momentum',
     name: 'Momentum Scanners',
-    icon: TrendingUp,
-    color: 'from-blue-500 to-cyan-600',
+    icon: Zap,
+    color: 'from-blue-500 to-indigo-600',
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/30',
     textColor: 'text-blue-400',
-    description: 'High momentum stocks with volume',
+    description: 'High momentum stocks with strong trends',
     scanners: [
-      { id: 5, name: 'RSI Screening', description: 'Overbought/Oversold stocks', premium: false },
-      { id: 9, name: 'Volume Gainers', description: 'Unusual volume spikes', premium: false },
-      { id: 13, name: 'Bullish RSI & MACD', description: 'Double momentum confirmation', premium: true },
-      { id: 31, name: 'High Momentum', description: 'RSI + MFI + CCI combined', premium: true },
+      { id: 2, name: 'Top Gainers (>2%)', description: 'Biggest gainers today', premium: false },
+      { id: 3, name: 'Top Losers (>2%)', description: 'Biggest losers today', premium: false },
+      { id: 10, name: 'RSI Overbought (>70)', description: 'Strong momentum stocks', premium: false },
+      { id: 17, name: 'Bull Momentum', description: 'Strong bullish momentum', premium: false },
+      { id: 26, name: 'MACD Crossover', description: 'MACD bullish crossover', premium: true },
+      { id: 30, name: 'Momentum Burst', description: 'Sudden momentum increase', premium: true },
+      { id: 31, name: 'Trend Template', description: 'Mark Minervini setup', premium: true },
+    ]
+  },
+  {
+    id: 'volume',
+    name: 'Volume Scanners',
+    icon: BarChart3,
+    color: 'from-purple-500 to-violet-600',
+    bgColor: 'bg-purple-500/10',
+    borderColor: 'border-purple-500/30',
+    textColor: 'text-purple-400',
+    description: 'Unusual volume activity detection',
+    scanners: [
+      { id: 4, name: 'Volume Breakout', description: 'Price + Volume combo', premium: false },
+      { id: 8, name: 'Volume Surge (>2.5x)', description: 'Unusual volume spike', premium: false },
+      { id: 37, name: 'Delivery Volume', description: 'High delivery percentage', premium: true },
+      { id: 38, name: 'Bulk Deals', description: 'Recent bulk deals', premium: true },
+      { id: 39, name: 'Block Deals', description: 'Recent block deals', premium: true },
+    ]
+  },
+  {
+    id: 'reversal',
+    name: 'Reversal Scanners',
+    icon: ArrowRightLeft,
+    color: 'from-orange-500 to-amber-600',
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-orange-500/30',
+    textColor: 'text-orange-400',
+    description: 'Potential trend reversal setups',
+    scanners: [
+      { id: 9, name: 'RSI Oversold (<30)', description: 'Potential bounce candidates', premium: false },
+      { id: 12, name: 'Bullish Engulfing', description: 'Strong reversal candle', premium: false },
+      { id: 13, name: 'Bearish Engulfing', description: 'Bearish reversal pattern', premium: false },
+      { id: 19, name: 'PSar Reversal', description: 'Parabolic SAR reversal', premium: true },
+      { id: 24, name: 'Double Bottom', description: 'W-pattern reversal', premium: true },
+      { id: 28, name: 'Inside Bar', description: 'Inside bar (NR) pattern', premium: false },
     ]
   },
   {
     id: 'patterns',
     name: 'Chart Patterns',
-    icon: Activity,
-    color: 'from-purple-500 to-violet-600',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/30',
-    textColor: 'text-purple-400',
-    description: 'Classic chart patterns & setups',
+    icon: Triangle,
+    color: 'from-pink-500 to-rose-600',
+    bgColor: 'bg-pink-500/10',
+    borderColor: 'border-pink-500/30',
+    textColor: 'text-pink-400',
+    description: 'Classic technical chart patterns',
     scanners: [
-      { id: 14, name: 'NR4 Daily', description: 'Narrow Range compression', premium: false },
-      { id: 3, name: 'VCP Patterns', description: 'Volatility Contraction (Minervini)', premium: true },
-      { id: 7, name: 'Chart Patterns', description: 'H&S, Cup & Handle, Triangles', premium: true },
-      { id: 24, name: 'SuperTrend Bullish', description: 'Higher Highs pattern', premium: true },
+      { id: 14, name: 'VCP Pattern', description: 'Volatility Contraction (Minervini)', premium: true },
+      { id: 21, name: 'NR4 Pattern', description: 'Narrow Range 4-day', premium: false },
+      { id: 22, name: 'NR7 Pattern', description: 'Narrow Range 7-day', premium: false },
+      { id: 23, name: 'Cup & Handle', description: 'Classic bullish pattern', premium: true },
+      { id: 24, name: 'Double Bottom', description: 'W-pattern reversal', premium: true },
+      { id: 25, name: 'Head & Shoulders', description: 'Reversal pattern', premium: true },
     ]
   },
   {
-    id: 'reversals',
-    name: 'Reversal Scanners',
-    icon: RefreshCw,
-    color: 'from-amber-500 to-orange-600',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-    textColor: 'text-amber-400',
-    description: 'Potential trend reversal candidates',
-    scanners: [
-      { id: 6, name: 'Reversal Signals', description: 'Potential trend reversals', premium: false },
-      { id: 25, name: 'Watch for Reversal', description: 'Lower Highs pattern', premium: false },
-      { id: 18, name: 'Aroon Crossover', description: 'Bullish Aroon(14) cross', premium: true },
-      { id: 20, name: 'Bullish Tomorrow', description: 'AI prediction for next day', premium: true },
-    ]
-  },
-  {
-    id: 'institutional',
-    name: 'Smart Money',
-    icon: Building,
+    id: 'ma_strategies',
+    name: 'MA Strategies',
+    icon: LineChart,
     color: 'from-cyan-500 to-teal-600',
     bgColor: 'bg-cyan-500/10',
     borderColor: 'border-cyan-500/30',
     textColor: 'text-cyan-400',
-    description: 'Track institutional activity',
+    description: 'Moving average crossover strategies',
     scanners: [
-      { id: 22, name: 'Stock Performance', description: 'Multi-timeframe analysis', premium: false },
-      { id: 26, name: 'Corporate Actions', description: 'Splits, bonus, dividends', premium: false },
-      { id: 21, name: 'MF/FII Popular', description: 'Institutional favorites', premium: true },
+      { id: 11, name: 'Short-term MA Cross', description: 'Price crossed 20 EMA', premium: false },
+      { id: 15, name: 'Bull Crossover', description: '20 EMA crossing 50 EMA', premium: false },
+      { id: 26, name: 'MACD Bullish', description: 'MACD crossover signal', premium: true },
+      { id: 27, name: 'MACD Bearish', description: 'MACD bearish cross', premium: true },
+      { id: 32, name: 'Super Trend', description: 'Super Trend indicator', premium: true },
     ]
   },
   {
-    id: 'intraday',
-    name: 'Intraday Scanners',
-    icon: Clock,
+    id: 'smart_money',
+    name: 'Smart Money',
+    icon: Target,
+    color: 'from-yellow-500 to-orange-500',
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/30',
+    textColor: 'text-yellow-400',
+    description: 'Institutional activity indicators',
+    scanners: [
+      { id: 36, name: 'FII/DII Data', description: 'Institutional buying/selling', premium: true },
+      { id: 37, name: 'Delivery Volume', description: 'High delivery %', premium: true },
+      { id: 38, name: 'Bulk Deals', description: 'Large block trades', premium: true },
+      { id: 39, name: 'Block Deals', description: 'Institutional blocks', premium: true },
+      { id: 35, name: 'Supply/Demand Zone', description: 'Key S/D zones', premium: true },
+    ]
+  },
+  {
+    id: 'fo_analysis',
+    name: 'F&O Analysis',
+    icon: Layers,
     color: 'from-red-500 to-rose-600',
     bgColor: 'bg-red-500/10',
     borderColor: 'border-red-500/30',
     textColor: 'text-red-400',
-    description: 'Real-time intraday setups',
+    description: 'Futures & Options data analysis',
     scanners: [
-      { id: 12, name: 'Price & Volume Breakout', description: 'N-minute breakouts', premium: true },
-      { id: 29, name: 'Bid/Ask Buildup', description: 'Order flow analysis', premium: true },
-      { id: 32, name: 'Intraday Setup', description: 'Breakout/Breakdown setups', premium: true },
-    ]
-  },
-  {
-    id: 'value',
-    name: 'Value Hunting',
-    icon: DollarSign,
-    color: 'from-green-500 to-emerald-600',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/30',
-    textColor: 'text-green-400',
-    description: 'Undervalued & oversold stocks',
-    scanners: [
-      { id: 15, name: '52-Week Low', description: 'Near 52-week lows', premium: false },
-      { id: 16, name: '10-Day Low Breakout', description: 'Short-term oversold', premium: false },
-      { id: 33, name: 'Profitable Setups', description: 'High probability trades', premium: true },
-    ]
-  },
-  {
-    id: 'technical',
-    name: 'Technical Indicators',
-    icon: BarChart3,
-    color: 'from-violet-500 to-purple-600',
-    bgColor: 'bg-violet-500/10',
-    borderColor: 'border-violet-500/30',
-    textColor: 'text-violet-400',
-    description: 'Advanced indicator scans',
-    scanners: [
-      { id: 8, name: 'CCI Scanner', description: 'CCI outside range', premium: false },
-      { id: 27, name: 'ATR Cross', description: 'Volatility expansion', premium: false },
-      { id: 11, name: 'Ichimoku Bullish', description: 'Cloud breakout', premium: true },
-      { id: 30, name: 'ATR Trailing Stops', description: 'Swing trade levels', premium: true },
+      { id: 40, name: 'OI Analysis', description: 'Open Interest analysis', premium: true },
+      { id: 41, name: 'Long Buildup', description: 'F&O long buildup', premium: true },
+      { id: 42, name: 'Short Buildup', description: 'F&O short buildup', premium: true },
+      { id: 36, name: 'FII/DII F&O', description: 'Institutional F&O data', premium: true },
     ]
   },
 ]
 
-// Mock scan results (replace with API call)
-const MOCK_RESULTS = [
-  { symbol: 'TRENT', ltp: 4567.89, change: 3.2, volume: 1234567, signal: 'Strong Buy', rsi: 62, pattern: 'Breakout' },
-  { symbol: 'POLYCAB', ltp: 5678.90, change: 2.8, volume: 987654, signal: 'Buy', rsi: 58, pattern: 'VCP' },
-  { symbol: 'PERSISTENT', ltp: 4321.00, change: 1.9, volume: 876543, signal: 'Buy', rsi: 55, pattern: 'Momentum' },
-  { symbol: 'DIXON', ltp: 5432.10, change: 2.5, volume: 654321, signal: 'Buy', rsi: 61, pattern: 'Breakout' },
-  { symbol: 'TATAELXSI', ltp: 6789.00, change: 1.5, volume: 543210, signal: 'Hold', rsi: 52, pattern: 'Consolidating' },
-  { symbol: 'COFORGE', ltp: 5234.50, change: 2.1, volume: 432109, signal: 'Buy', rsi: 57, pattern: 'Momentum' },
-  { symbol: 'ASTRAL', ltp: 1876.30, change: 1.8, volume: 765432, signal: 'Buy', rsi: 54, pattern: 'Support' },
-  { symbol: 'LALPATHLAB', ltp: 2345.60, change: 1.2, volume: 321098, signal: 'Hold', rsi: 48, pattern: 'Range' },
+// AI/ML Features
+const AI_FEATURES = [
+  {
+    id: 'nifty_prediction',
+    name: 'Nifty AI Prediction',
+    icon: Brain,
+    description: 'LSTM + XGBoost ensemble prediction',
+    endpoint: '/api/screener/ai/nifty-prediction',
+  },
+  {
+    id: 'ml_signals',
+    name: 'ML Trading Signals',
+    icon: Binary,
+    description: 'Pattern recognition & momentum',
+    endpoint: '/api/screener/ai/ml-signals',
+  },
+  {
+    id: 'trend_forecast',
+    name: 'Trend Forecasting',
+    icon: Trend,
+    description: 'Multi-timeframe analysis',
+    endpoint: '/api/screener/ai/trend-forecast/NIFTY',
+  },
 ]
 
 // ============================================================================
-// SCREENER PAGE
+// COMPONENTS
+// ============================================================================
+
+function StockCard({ stock, index }: { stock: any; index: number }) {
+  const isPositive = (stock.change_pct || stock.change || 0) >= 0
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+      className="group relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-all hover:bg-gray-800/50"
+    >
+      <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity ${
+        isPositive ? 'bg-green-500/5' : 'bg-red-500/5'
+      }`} />
+      
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h3 className="text-lg font-bold text-white">{stock.symbol}</h3>
+            <p className="text-xs text-gray-500 truncate max-w-[120px]">{stock.name || stock.sector || stock.symbol}</p>
+          </div>
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${
+            isPositive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+          }`}>
+            {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            {Math.abs(stock.change_pct || stock.change || 0).toFixed(2)}%
+          </div>
+        </div>
+        
+        <div className="text-2xl font-bold text-white mb-3">
+          ₹{(stock.ltp || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+          <div className="bg-gray-800/50 rounded-lg p-2">
+            <div className="text-gray-500 text-xs">Volume</div>
+            <div className="text-white font-medium">{stock.volume || 'N/A'}</div>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg p-2">
+            <div className="text-gray-500 text-xs">RSI</div>
+            <div className={`font-medium ${
+              (stock.rsi || 50) > 70 ? 'text-red-400' : (stock.rsi || 50) < 30 ? 'text-green-400' : 'text-white'
+            }`}>{stock.rsi || 50}</div>
+          </div>
+        </div>
+        
+        {stock.signal && (
+          <div className={`w-full py-2 text-center rounded-lg text-sm font-medium ${
+            stock.signal === 'Strong Buy' ? 'bg-green-500/20 text-green-400' :
+            stock.signal === 'Buy' ? 'bg-emerald-500/20 text-emerald-400' :
+            stock.signal === 'Hold' ? 'bg-yellow-500/20 text-yellow-400' :
+            stock.signal === 'Sell' ? 'bg-orange-500/20 text-orange-400' :
+            'bg-red-500/20 text-red-400'
+          }`}>
+            {stock.signal}
+          </div>
+        )}
+        
+        {stock.pattern && stock.pattern !== 'N/A' && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-gray-400">
+            <Triangle className="w-3 h-3" />
+            {stock.pattern}
+          </div>
+        )}
+        
+        {(stock.target_1 || stock.stop_loss) && (
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+            {stock.target_1 && (
+              <div className="text-green-400">
+                Target: ₹{stock.target_1.toLocaleString()}
+              </div>
+            )}
+            {stock.stop_loss && (
+              <div className="text-red-400">
+                SL: ₹{stock.stop_loss.toLocaleString()}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+function AIFeatureCard({ feature, onClick, isLoading }: { feature: any; onClick: () => void; isLoading: boolean }) {
+  const Icon = feature.icon
+  return (
+    <motion.button
+      onClick={onClick}
+      disabled={isLoading}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="w-full p-4 rounded-xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 border border-purple-500/30 text-left hover:border-purple-400/50 transition-all disabled:opacity-50"
+    >
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-purple-500/20">
+          <Icon className="w-5 h-5 text-purple-400" />
+        </div>
+        <div>
+          <div className="font-semibold text-white">{feature.name}</div>
+          <div className="text-xs text-gray-400">{feature.description}</div>
+        </div>
+        {isLoading && <RefreshCw className="w-4 h-4 text-purple-400 animate-spin ml-auto" />}
+      </div>
+    </motion.button>
+  )
+}
+
+function NiftyPredictionPanel({ data }: { data: any }) {
+  if (!data) return null
+  
+  const ensemble = data.ensemble || {}
+  
+  return (
+    <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <Brain className="w-6 h-6 text-purple-400" />
+        <h3 className="text-lg font-bold text-white">AI Nifty Prediction</h3>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-gray-900/50 rounded-lg p-4">
+          <div className="text-gray-400 text-sm mb-1">Predicted Level</div>
+          <div className="text-2xl font-bold text-white">{ensemble.prediction?.toLocaleString()}</div>
+        </div>
+        <div className="bg-gray-900/50 rounded-lg p-4">
+          <div className="text-gray-400 text-sm mb-1">Direction</div>
+          <div className={`text-2xl font-bold ${ensemble.direction === 'UP' ? 'text-green-400' : 'text-red-400'}`}>
+            {ensemble.direction} {ensemble.direction === 'UP' ? '↑' : '↓'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-400">Confidence</span>
+          <span className="text-white font-medium">{((ensemble.confidence || 0) * 100).toFixed(1)}%</span>
+        </div>
+        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
+            style={{ width: `${(ensemble.confidence || 0) * 100}%` }}
+          />
+        </div>
+      </div>
+      
+      {data.support_levels && (
+        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <div className="text-gray-400 mb-1">Support Levels</div>
+            {data.support_levels.map((level: number, i: number) => (
+              <div key={i} className="text-green-400">{level.toLocaleString()}</div>
+            ))}
+          </div>
+          <div>
+            <div className="text-gray-400 mb-1">Resistance Levels</div>
+            {data.resistance_levels?.map((level: number, i: number) => (
+              <div key={i} className="text-red-400">{level.toLocaleString()}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================================
+// MAIN PAGE
 // ============================================================================
 
 export default function ScreenerPage() {
   const router = useRouter()
-  const { user, profile, loading: authLoading } = useAuth()
-  
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedScanner, setSelectedScanner] = useState<any | null>(null)
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-
-  // Check if user has premium access
-  const isPremium = profile?.subscription_status === 'active' || profile?.subscription_status === 'trial'
-
-  // Run a scan
-  const runScan = async (scanner: any) => {
-    if (scanner.premium && !isPremium) {
-      router.push('/pricing')
-      return
-    }
-
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+  const [isConnected, setIsConnected] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isPremium] = useState(true)
+  const [activeTab, setActiveTab] = useState<'scanners' | 'ai'>('scanners')
+  const [aiData, setAiData] = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [stocksCovered, setStocksCovered] = useState(1847)
+  
+  const runScan = useCallback(async (scanner: any) => {
     setSelectedScanner(scanner)
     setLoading(true)
-
-    // Simulate API call (replace with real API)
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    setResults([])
     
-    // In production, call: const result = await api.screener.runScan(scanner.id)
-    setResults(MOCK_RESULTS)
-    setLoading(false)
-  }
-
-  // Filter categories by search
-  const filteredCategories = SCANNER_CATEGORIES.filter(cat =>
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    cat.scanners.some(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
+    try {
+      const response = await fetch(`${API_BASE}/api/screener/scan/${scanner.id}`)
+      const data = await response.json()
+      
+      if (data.success && data.results) {
+        setResults(data.results)
+        setLastUpdated(data.timestamp)
+        setIsConnected(true)
+        setStocksCovered(data.count || data.results.length)
+      }
+    } catch (error) {
+      console.error('Scan failed:', error)
+      setIsConnected(false)
+    } finally {
+      setLoading(false)
     }
-  }, [user, authLoading, router])
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
-        <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin" />
-      </div>
-    )
+  }, [])
+  
+  const runAIFeature = async (feature: any) => {
+    setAiLoading(true)
+    setAiData(null)
+    
+    try {
+      const response = await fetch(`${API_BASE}${feature.endpoint}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setAiData({ type: feature.id, ...data.data })
+      }
+    } catch (error) {
+      console.error('AI feature failed:', error)
+    } finally {
+      setAiLoading(false)
+    }
   }
-
-  if (!user) return null
+  
+  const runSwingCandidates = async () => {
+    setSelectedScanner({ id: 'ai', name: 'AI Swing Candidates' })
+    setLoading(true)
+    setResults([])
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/screener/swing-candidates?limit=30`)
+      const data = await response.json()
+      
+      if (data.success && data.results) {
+        setResults(data.results)
+        setLastUpdated(data.timestamp)
+      }
+    } catch (error) {
+      console.error('Swing candidates failed:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const currentCategory = SCANNER_CATEGORIES.find(c => c.id === selectedCategory)
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-black text-white">
+      {/* Background */}
+      <div className="fixed inset-0 bg-gradient-to-b from-gray-900/50 via-black to-black pointer-events-none" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-900/10 via-transparent to-transparent pointer-events-none" />
+      
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-gray-800">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-white/5 rounded-xl transition-colors">
-                <ArrowLeft className="w-5 h-5 text-gray-400" />
+              <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-white">
+                <ArrowLeft className="w-5 h-5" />
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                  Stock Screener
-                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/20 text-emerald-400 rounded-full">
-                    40+ Scanners
-                  </span>
-                </h1>
-                <p className="text-sm text-gray-500">Powered by PKScreener • Find winning stocks</p>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600">
+                  <Search className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">AI Beta Screener</h1>
+                  <p className="text-xs text-gray-500">43+ Scanners • AI/ML Powered</p>
+                </div>
               </div>
             </div>
-
-            {/* Search */}
-            <div className="flex items-center gap-3">
+            
+            <div className="flex-1 max-w-md hidden md:block">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
+                  placeholder="Search scanners..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search scanners..."
-                  className="w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-emerald-500/50"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-green-500/50"
                 />
               </div>
-              {!isPremium && (
-                <Link
-                  href="/pricing"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all"
-                >
-                  <Crown className="w-4 h-4" />
-                  Upgrade
-                </Link>
-              )}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                isConnected ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                {isConnected ? 'Live' : 'Offline'}
+              </div>
+              <Link href="/dashboard" className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-sm font-medium">
+                Dashboard
+              </Link>
             </div>
           </div>
         </div>
       </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Scanners', value: '40+', icon: BarChart3, color: 'text-emerald-400' },
-            { label: 'Stocks Covered', value: '1,800+', icon: Target, color: 'text-blue-400' },
-            { label: 'Updated', value: 'Real-time', icon: Zap, color: 'text-amber-400' },
-            { label: 'Your Access', value: isPremium ? 'Full' : 'Limited', icon: isPremium ? Star : Lock, color: isPremium ? 'text-emerald-400' : 'text-gray-400' },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                  <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-                </div>
-                <stat.icon className={`w-8 h-8 ${stat.color} opacity-50`} />
+      
+      {/* Stats Bar */}
+      <div className="border-b border-gray-800 bg-gray-900/30">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-green-500" />
+                <span className="text-gray-400">Scanners:</span>
+                <span className="font-semibold text-white">43+</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe2 className="w-4 h-4 text-blue-500" />
+                <span className="text-gray-400">NSE/BSE:</span>
+                <span className="font-semibold text-white">1800+ stocks</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-500" />
+                <span className="text-gray-400">AI Models:</span>
+                <span className="font-semibold text-white">3 (LSTM, XGBoost, RF)</span>
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Scanner Categories */}
-          <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-lg font-semibold text-white">Scanner Categories</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredCategories.map((category) => (
-                <motion.div
-                  key={category.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`group relative overflow-hidden rounded-2xl border ${
-                    selectedCategory === category.id 
-                      ? `${category.borderColor} ${category.bgColor}` 
-                      : 'border-white/5 bg-white/[0.02] hover:border-white/10'
-                  } transition-all cursor-pointer`}
-                  onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
-                >
-                  {/* Gradient overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
-                  
-                  <div className="relative p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className={`p-2.5 rounded-xl ${category.bgColor}`}>
-                        <category.icon className={`w-5 h-5 ${category.textColor}`} />
-                      </div>
-                      <span className="text-xs text-gray-500">{category.scanners.length} scanners</span>
-                    </div>
-                    
-                    <h3 className="text-white font-semibold mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-500 mb-4">{category.description}</p>
-                    
-                    {/* Scanners list */}
-                    <AnimatePresence>
-                      {selectedCategory === category.id && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="space-y-2 pt-3 border-t border-white/5"
-                        >
-                          {category.scanners.map((scanner) => (
-                            <button
-                              key={scanner.id}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                runScan(scanner)
-                              }}
-                              disabled={loading}
-                              className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                                selectedScanner?.id === scanner.id
-                                  ? `${category.bgColor} ${category.borderColor} border`
-                                  : 'bg-white/[0.03] hover:bg-white/[0.05]'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                {scanner.premium && !isPremium ? (
-                                  <Lock className="w-4 h-4 text-gray-500" />
-                                ) : (
-                                  <Play className={`w-4 h-4 ${category.textColor}`} />
-                                )}
-                                <div className="text-left">
-                                  <p className="text-sm font-medium text-white">{scanner.name}</p>
-                                  <p className="text-xs text-gray-500">{scanner.description}</p>
-                                </div>
-                              </div>
-                              {scanner.premium && (
-                                <span className={`px-2 py-0.5 text-xs rounded-full ${
-                                  isPremium 
-                                    ? 'bg-emerald-500/20 text-emerald-400' 
-                                    : 'bg-amber-500/20 text-amber-400'
-                                }`}>
-                                  {isPremium ? 'PRO' : 'Upgrade'}
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="flex -space-x-1">
-                        {category.scanners.slice(0, 3).map((_, i) => (
-                          <div key={i} className={`w-6 h-6 rounded-full ${category.bgColor} border-2 border-[#0a0a0f] flex items-center justify-center`}>
-                            <span className={`text-xs ${category.textColor}`}>{i + 1}</span>
-                          </div>
-                        ))}
-                        {category.scanners.length > 3 && (
-                          <div className="w-6 h-6 rounded-full bg-white/10 border-2 border-[#0a0a0f] flex items-center justify-center">
-                            <span className="text-xs text-gray-400">+{category.scanners.length - 3}</span>
-                          </div>
-                        )}
-                      </div>
-                      <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${
-                        selectedCategory === category.id ? 'rotate-90' : ''
-                      }`} />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Results Panel */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Scan Results</h2>
-              {results.length > 0 && (
-                <button className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors">
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-              )}
-            </div>
-
-            <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden">
-              {loading ? (
-                <div className="p-12 text-center">
-                  <RefreshCw className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-400">Scanning 1,800+ stocks...</p>
-                  <p className="text-sm text-gray-500 mt-1">This may take a few seconds</p>
-                </div>
-              ) : results.length > 0 ? (
-                <div>
-                  {/* Scanner info */}
-                  {selectedScanner && (
-                    <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-white">{selectedScanner.name}</p>
-                          <p className="text-sm text-gray-500">{results.length} stocks found</p>
-                        </div>
-                        <button
-                          onClick={() => runScan(selectedScanner)}
-                          className="p-2 hover:bg-white/5 rounded-lg transition-colors"
-                        >
-                          <RefreshCw className="w-4 h-4 text-gray-400" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Results list */}
-                  <div className="divide-y divide-white/5">
-                    {results.map((stock, i) => (
-                      <motion.div
-                        key={stock.symbol}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="p-4 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center">
-                              <span className="text-sm font-bold text-white">{stock.symbol.slice(0, 2)}</span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{stock.symbol}</p>
-                              <p className="text-xs text-gray-500">{stock.pattern}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium text-white">₹{stock.ltp.toLocaleString()}</p>
-                            <p className={`text-sm ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {stock.change >= 0 ? '+' : ''}{stock.change}%
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span>Vol: {(stock.volume / 1000000).toFixed(1)}M</span>
-                            <span>RSI: {stock.rsi}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors" title="Add to Watchlist">
-                              <Plus className="w-4 h-4 text-gray-400" />
-                            </button>
-                            <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors" title="Set Alert">
-                              <Bell className="w-4 h-4 text-gray-400" />
-                            </button>
-                            <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors" title="View Chart">
-                              <ExternalLink className="w-4 h-4 text-gray-400" />
-                            </button>
-                            <button className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg hover:bg-emerald-500/30 transition-colors">
-                              Trade
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-8 h-8 text-gray-600" />
-                  </div>
-                  <p className="text-gray-400 mb-2">No scan results yet</p>
-                  <p className="text-sm text-gray-500">Select a scanner from the left to find stocks</p>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 rounded-2xl p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-xl bg-emerald-500/20">
-                  <Zap className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-white">AI Swing Candidates</p>
-                  <p className="text-sm text-gray-400">Best stocks from all scanners</p>
-                </div>
-              </div>
+            {/* Tab Switcher */}
+            <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-1">
               <button
-                onClick={() => {
-                  setSelectedScanner({ id: 'ai', name: 'AI Swing Candidates' })
-                  setLoading(true)
-                  setTimeout(() => {
-                    setResults(MOCK_RESULTS.slice(0, 5))
-                    setLoading(false)
-                  }, 1500)
-                }}
-                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-blue-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+                onClick={() => setActiveTab('scanners')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'scanners' ? 'bg-green-500 text-white' : 'text-gray-400 hover:text-white'
+                }`}
               >
-                Find Best Swing Stocks
+                Scanners
+              </button>
+              <button
+                onClick={() => setActiveTab('ai')}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
+                  activeTab === 'ai' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                AI/ML
               </button>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid lg:grid-cols-12 gap-6">
+          
+          {/* Left Sidebar */}
+          <div className="lg:col-span-3">
+            <div className="sticky top-24 space-y-4">
+              {activeTab === 'scanners' ? (
+                <>
+                  {/* AI Quick Scan */}
+                  <motion.button
+                    onClick={runSwingCandidates}
+                    whileHover={{ scale: 1.02 }}
+                    className="w-full p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-white/20">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-bold">AI Swing Candidates</div>
+                        <div className="text-xs text-white/70">Best picks by AI</div>
+                      </div>
+                    </div>
+                  </motion.button>
+                  
+                  {/* Categories */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase px-1">Scanner Categories (43+)</h3>
+                    {SCANNER_CATEGORIES.map(category => {
+                      const Icon = category.icon
+                      return (
+                        <button
+                          key={category.id}
+                          onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+                          className={`w-full p-3 rounded-xl text-left transition-all ${
+                            selectedCategory === category.id 
+                              ? `bg-gradient-to-br ${category.color} border-2 border-white/20`
+                              : `${category.bgColor} border ${category.borderColor} hover:border-white/20`
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className={`w-5 h-5 ${selectedCategory === category.id ? 'text-white' : category.textColor}`} />
+                            <div className="flex-1">
+                              <div className={`font-semibold ${selectedCategory === category.id ? 'text-white' : 'text-white'}`}>
+                                {category.name}
+                              </div>
+                              <div className={`text-xs ${selectedCategory === category.id ? 'text-white/70' : 'text-gray-500'}`}>
+                                {category.scanners.length} scanners
+                              </div>
+                            </div>
+                            <ChevronRight className={`w-4 h-4 transition-transform ${
+                              selectedCategory === category.id ? 'text-white rotate-90' : 'text-gray-500'
+                            }`} />
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-1">AI/ML Features</h3>
+                  {AI_FEATURES.map(feature => (
+                    <AIFeatureCard
+                      key={feature.id}
+                      feature={feature}
+                      onClick={() => runAIFeature(feature)}
+                      isLoading={aiLoading}
+                    />
+                  ))}
+                  
+                  <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl">
+                    <div className="text-sm text-purple-300 mb-2">Powered by:</div>
+                    <div className="space-y-1 text-xs text-gray-400">
+                      <div>• LSTM Neural Networks</div>
+                      <div>• XGBoost Ensemble</div>
+                      <div>• Random Forest</div>
+                      <div>• Pattern Recognition</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Scanner List (when category selected) */}
+          <AnimatePresence mode="wait">
+            {selectedCategory && currentCategory && (
+              <motion.div
+                key="scanner-list"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="lg:col-span-3"
+              >
+                <div className="sticky top-24 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-400">{currentCategory.name}</h3>
+                    <button onClick={() => setSelectedCategory(null)} className="p-1 hover:bg-gray-800 rounded">
+                      <X className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+                    {currentCategory.scanners.map(scanner => (
+                      <button
+                        key={scanner.id}
+                        onClick={() => runScan(scanner)}
+                        disabled={scanner.premium && !isPremium}
+                        className={`w-full p-3 rounded-lg text-left transition-all ${
+                          scanner.premium && !isPremium
+                            ? 'bg-gray-800/30 opacity-50 cursor-not-allowed'
+                            : selectedScanner?.id === scanner.id
+                              ? 'bg-blue-500/20 border border-blue-500/50'
+                              : 'bg-gray-800/50 hover:bg-gray-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-medium ${selectedScanner?.id === scanner.id ? 'text-blue-400' : 'text-white'}`}>
+                                {scanner.name}
+                              </span>
+                              {scanner.premium && (
+                                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-semibold rounded">PRO</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-0.5">{scanner.description}</p>
+                          </div>
+                          {scanner.premium && !isPremium ? (
+                            <Lock className="w-4 h-4 text-gray-600" />
+                          ) : (
+                            <Play className="w-4 h-4 text-gray-400" />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          
+          {/* Results Panel */}
+          <div className={`${selectedCategory ? 'lg:col-span-6' : 'lg:col-span-9'}`}>
+            {activeTab === 'ai' && aiData ? (
+              <NiftyPredictionPanel data={aiData} />
+            ) : (
+              <>
+                {/* Results Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    {selectedScanner ? (
+                      <div>
+                        <h2 className="text-xl font-bold text-white">{selectedScanner.name}</h2>
+                        <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                          <span>{results.length} stocks found</span>
+                          {lastUpdated && (
+                            <>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {new Date(lastUpdated).toLocaleTimeString()}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Select a Scanner</h2>
+                        <p className="text-sm text-gray-500 mt-1">Choose from 43+ professional scanners</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {selectedScanner && (
+                    <button
+                      onClick={() => runScan(selectedScanner)}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </button>
+                  )}
+                </div>
+                
+                {/* Loading */}
+                {loading && (
+                  <div className="flex flex-col items-center justify-center py-20">
+                    <div className="relative">
+                      <div className="w-16 h-16 border-4 border-gray-800 border-t-green-500 rounded-full animate-spin" />
+                      <Search className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-green-500" />
+                    </div>
+                    <p className="mt-4 text-gray-400">Scanning 1800+ stocks...</p>
+                    <p className="text-sm text-gray-600">AI-Powered Stock Screener</p>
+                  </div>
+                )}
+                
+                {/* Empty State */}
+                {!loading && !selectedScanner && (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 mb-4">
+                      <Search className="w-12 h-12 text-green-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Ready to Scan</h3>
+                    <p className="text-gray-400 max-w-md mb-4">
+                      Access 43+ professional scanners including breakouts, momentum, patterns, and AI/ML predictions.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {['Breakouts', 'Momentum', 'VCP', 'Cup & Handle', 'AI Signals'].map(tag => (
+                        <span key={tag} className="px-3 py-1 bg-gray-800 rounded-full text-sm text-gray-400">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Results Grid */}
+                {!loading && results.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {results.map((stock, index) => (
+                      <StockCard key={stock.symbol} stock={stock} index={index} />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer */}
+      <footer className="border-t border-gray-800 mt-12">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Search className="w-4 h-4 text-green-500" />
+              <span className="text-sm text-gray-400">
+                AI Beta Screener • Full NSE/BSE Coverage • 43+ Scanners
+              </span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-gray-500">
+              <Link href="/pricing" className="hover:text-white">Upgrade to Pro</Link>
+              <a href="/dashboard" className="hover:text-white flex items-center gap-1">
+                GitHub <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

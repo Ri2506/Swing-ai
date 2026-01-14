@@ -1187,11 +1187,21 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         await websocket.close(code=4000)
 
 # ============================================================================
-# SCREENER ROUTES
+# SCREENER ROUTES (PKScreener Real-time)
 # ============================================================================
 
-from ..services.screener_service import create_screener_routes
-create_screener_routes(app, get_supabase_admin())
+try:
+    from .screener_routes import register_screener_routes
+    register_screener_routes(app)
+    logger.info("✅ AI Beta Screener real-time routes registered")
+except Exception as e:
+    logger.warning(f"Screener routes not available: {e}")
+    # Fallback to Supabase-based routes if available
+    try:
+        from ..services.screener_service import create_screener_routes
+        create_screener_routes(app, get_supabase_admin())
+    except:
+        pass
 
 # ============================================================================
 # RUN SERVER

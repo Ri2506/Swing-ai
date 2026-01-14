@@ -36,6 +36,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // PROVIDER
 // ============================================================================
 
+// DEV MODE - Check if Supabase is configured
+const isDevMode = !process.env.NEXT_PUBLIC_SUPABASE_URL
+
+// Mock user for development
+const MOCK_USER: User = {
+  id: 'dev-user-123',
+  email: 'demo@swingai.com',
+  aud: 'authenticated',
+  role: 'authenticated',
+  app_metadata: {},
+  user_metadata: { full_name: 'Demo Trader' },
+  created_at: new Date().toISOString(),
+} as User
+
+const MOCK_PROFILE: UserProfile = {
+  id: 'dev-user-123',
+  email: 'demo@swingai.com',
+  full_name: 'Demo Trader',
+  phone: '+91 98765 43210',
+  timezone: 'Asia/Kolkata',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  subscription_tier: 'pro',
+  subscription_status: 'active',
+  subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+  broker_connected: true,
+  trading_mode: 'semi_auto',
+  total_capital: 500000,
+  risk_percentage: 2,
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -50,6 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const loadUser = async () => {
       try {
+        // DEV MODE: Use mock user
+        if (isDevMode) {
+          console.log('🚀 DEV MODE: Using mock user')
+          setUser(MOCK_USER)
+          setProfile(MOCK_PROFILE)
+          setLoading(false)
+          return
+        }
+
         const { data: { session } } = await supabase.auth.getSession()
 
         if (session?.user) {
@@ -58,12 +98,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error loading user:', error)
+        // In case of error, use mock user in dev
+        if (isDevMode) {
+          setUser(MOCK_USER)
+          setProfile(MOCK_PROFILE)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     loadUser()
+
+    // Skip auth listener in dev mode
+    if (isDevMode) return
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -156,6 +204,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // DEV MODE: Auto login with mock user
+      if (isDevMode) {
+        setUser(MOCK_USER)
+        setProfile(MOCK_PROFILE)
+        router.push('/dashboard')
+        return
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -176,6 +232,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
+      // DEV MODE: Auto login with mock user
+      if (isDevMode) {
+        setUser(MOCK_USER)
+        setProfile(MOCK_PROFILE)
+        router.push('/dashboard')
+        return
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -195,6 +259,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // DEV MODE: Just clear local state
+      if (isDevMode) {
+        setUser(null)
+        setProfile(null)
+        router.push('/')
+        return
+      }
+
       const { error } = await supabase.auth.signOut()
       if (error) throw error
 

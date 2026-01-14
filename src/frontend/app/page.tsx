@@ -349,6 +349,10 @@ export default function LandingPage() {
             SwingAI
           </Link>
           <div className="hidden md:flex items-center gap-8">
+            <Link href="/screener" className="text-green-400 hover:text-green-300 font-semibold transition flex items-center gap-1.5">
+              <Search className="w-4 h-4" />
+              AI Beta Screener
+            </Link>
             <Link href="#features" className="text-gray-400 hover:text-white transition">Features</Link>
             <Link href="#pricing" className="text-gray-400 hover:text-white transition">Pricing</Link>
             <Link href="#testimonials" className="text-gray-400 hover:text-white transition">Testimonials</Link>
@@ -599,7 +603,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PKScreener Section */}
+      {/* AI Beta Screener Section */}
       <section className="relative py-20 bg-gradient-to-b from-gray-900/50 to-black">
         <div className="container mx-auto px-6">
           <motion.div
@@ -617,7 +621,7 @@ export default function LandingPage() {
               40+ Professional Scanners
             </motion.div>
             <motion.h2 variants={fadeInUp} className="text-4xl md:text-5xl font-bold mb-4">
-              Powered by <span className="text-green-400">PKScreener</span>
+              AI Beta <span className="text-green-400">Screener</span>
             </motion.h2>
             <motion.p variants={fadeInUp} className="text-gray-400 text-lg max-w-2xl mx-auto">
               Industry-leading stock screening with 40+ pre-built scanners for every trading strategy
@@ -893,8 +897,8 @@ export default function LandingPage() {
               answer="The free trial gives you full access to the Starter plan features: 10 signals/day, semi-auto trading, Telegram alerts, and complete dashboard access. No credit card required. After 7 days, you can continue with the Free plan or upgrade to any paid tier."
             />
             <FAQItem
-              question="How are the 40+ PKScreener scans different from AI signals?"
-              answer="PKScreener scans help you discover stocks matching specific technical criteria (breakouts, reversals, volume spikes, etc.) in real-time. AI signals are actionable trade recommendations with entry/exit/stop-loss levels. Use scanners to build watchlists and discover opportunities, then wait for AI signals for optimal entry timing."
+              question="How are the 40+ AI Beta Screener scans different from AI signals?"
+              answer="AI Beta Screener scans help you discover stocks matching specific technical criteria (breakouts, reversals, volume spikes, etc.) in real-time. AI signals are actionable trade recommendations with entry/exit/stop-loss levels. Use scanners to build watchlists and discover opportunities, then wait for AI signals for optimal entry timing."
             />
             <FAQItem
               question="Can I backtest the AI models' performance?"
