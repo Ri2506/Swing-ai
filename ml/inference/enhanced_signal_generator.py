@@ -183,10 +183,8 @@ class EnhancedSignalGenerator:
                 f"({ensemble_pred.direction}, confidence: {ensemble_pred.confidence:.2f}%)"
             )
             
-            # Step 6: Strategy confluence (placeholder - will be filled by strategy layer)
-            # For now, use a placeholder value
-            strategy_confluence = 75.0
-            active_strategies = ["Placeholder - will be replaced by strategy layer"]
+            # Step 6: Strategy confluence - wire in actual strategy selector
+            strategy_confluence, active_strategies = self._get_strategy_confluence(df_daily, features)
             
             # Step 7: Validate with premium filter
             validation = self.premium_filter.validate_signal(
