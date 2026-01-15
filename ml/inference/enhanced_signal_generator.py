@@ -532,6 +532,148 @@ class EnhancedSignalGenerator:
             round(target_1, 2),
             round(target_2, 2)
         )
+    
+    def _get_strategy_confluence(
+        self,
+        df: pd.DataFrame,
+        features: Dict[str, float]
+    ) -> Tuple[float, List[str]]:
+        """
+        Get strategy confluence score from StrategySelector.
+        
+        Args:
+            df: Daily DataFrame with OHLCV
+            features: Calculated features dict
+            
+        Returns:
+            (confluence_score, list of active strategy names)
+        """
+        try:
+            from ml.strategies.strategy_selector import StrategySelector
+            
+            # Prepare DataFrame with required columns for strategy selector
+            strategy_df = df.copy()
+            
+            # Add features to DataFrame for strategy analysis
+            # Map our features to what strategies expect
+            feature_mapping = {
+                'RSI': features.get('rsi_14', 50),
+                'MACD': features.get('macd_line', 0),
+                'MACD_Signal': features.get('macd_signal', 0),
+                'BB_Upper': features.get('bb_upper', 0),
+                'BB_Middle': features.get('bb_middle', 0),
+                'BB_Lower': features.get('bb_lower', 0),
+                'Stochastic_K': features.get('stoch_k', 50),
+                'ATR': features.get('atr', 0),
+                'CCI': features.get('cci', 0),
+                'ADX': features.get('adx', 25),
+                'EMA_50': features.get('ema_50', 0),
+                'EMA_200': features.get('ema_200', 0),
+                'VWAP': features.get('vwap', 0),
+                'Support_Level': features.get('support_level', 0),
+                'Resistance_Level': features.get('resistance_level', 0),
+                'Fib_618': features.get('fib_618', 0),
+                'Pivot_Point': features.get('pivot_point', 0),
+                'Volume_MA': features.get('volume_ma_20', 0),
+                'Volume_Spike': 1 if features.get('volume_ratio', 1) > 1.5 else 0,
+                'OB_Strength': features.get('order_block_strength', 50),
+                'OB_Distance_Pct': features.get('ob_distance_pct', 0),
+                'FVG_Distance': features.get('fvg_distance', 0),
+                'FVG_Volume_Ratio': features.get('fvg_volume_ratio', 1),
+                'Sweep_Detected': 1 if features.get('liquidity_sweep', 0) > 0.5 else 0,
+                'Post_Sweep_Reversal_Prob': features.get('post_sweep_reversal_prob', 0.5),
+                'Inst_Activity_Score': features.get('institutional_activity', 50),
+                'Accumulation_Phase': features.get('accumulation_phase', 0),
+                'Distribution_Phase': features.get('distribution_phase', 0),
+                'Liquidity_Level': features.get('liquidity_level', 50),
+                'Weekly_Trend': features.get('weekly_trend', 0),
+                'Daily_Trend': features.get('daily_trend', 0),
+                'Hourly_Trend': features.get('hourly_trend', 0),
+                'MTF_Confluence': features.get('mtf_confluence', 50),
+                'Volume_Conf_Weekly': 1 if features.get('weekly_volume_conf', 0) > 0 else 0,
+                'RSI_Divergence': 1 if features.get('rsi_divergence', 0) > 0 else 0,
+                'MA_Alignment': features.get('ma_alignment', 50),
+                'Order_Flow_Imbalance': features.get('order_flow_imbalance', 0),
+                'Momentum_Composite': features.get('momentum_composite', 50),
+                'Reversal_Probability': features.get('reversal_probability', 50),
+                'Support_Resistance_Strength': features.get('sr_strength', 50),
+                'Volatility_Squeeze': features.get('volatility_squeeze', 50),
+            }
+            
+            # Add features to last row of DataFrame
+            for col, val in feature_mapping.items():
+                if col not in strategy_df.columns:
+                    strategy_df[col] = val
+            
+            # Initialize strategy selector and get top strategies
+            selector = StrategySelector()
+            current_idx = len(strategy_df) - 1
+            
+            top_strategies = selector.get_top_strategies(strategy_df, current_idx, top_n=5)
+            
+            if top_strategies:
+                # Calculate weighted average confluence
+                total_weight = 0
+                weighted_confluence = 0
+                active_names = []
+                
+                for i, strat in enumerate(top_strategies):
+                    # Weight by position (first strategy gets more weight)
+                    weight = 1.0 / (i + 1)
+                    weighted_confluence += strat['confluence'] * weight
+                    total_weight += weight
+                    
+                    if strat['confluence'] > 60:  # Only include high-confluence strategies
+                        active_names.append(f"{strat['name']} ({strat['tier']}, {strat['confluence']:.0f}%)")
+                
+                final_confluence = weighted_confluence / total_weight if total_weight > 0 else 50.0
+                
+                logger.info(f"Strategy confluence: {final_confluence:.1f}% from {len(active_names)} strategies")
+                return final_confluence, active_names
+            
+            return 50.0, ["No strategies matched"]
+            
+        except ImportError as e:
+            logger.warning(f"Strategy selector not available: {e}")
+            return 50.0, ["Strategy selector not available"]
+        except Exception as e:
+            logger.warning(f"Strategy confluence calculation failed: {e}")
+            # Fallback to feature-based confluence
+            confluence = self._calculate_fallback_confluence(features)
+            return confluence, ["Fallback confluence calculation"]
+    
+    def _calculate_fallback_confluence(self, features: Dict[str, float]) -> float:
+        """
+        Calculate a basic confluence score from features when strategy selector fails.
+        """
+        score = 50.0  # Start neutral
+        
+        # RSI contribution
+        rsi = features.get('rsi_14', 50)
+        if rsi < 30:
+            score += 15  # Oversold = bullish
+        elif rsi > 70:
+            score -= 15  # Overbought = bearish
+        
+        # MACD contribution
+        if features.get('macd_histogram', 0) > 0:
+            score += 10
+        else:
+            score -= 10
+        
+        # Trend contribution
+        trend = features.get('trend_direction', 50)
+        score += (trend - 50) * 0.3
+        
+        # Volume contribution
+        if features.get('volume_ratio', 1) > 1.5:
+            score += 5
+        
+        # MTF alignment
+        mtf = features.get('mtf_confluence', 50)
+        score += (mtf - 50) * 0.2
+        
+        return max(0, min(100, score))
 
 
 # ============================================================================
