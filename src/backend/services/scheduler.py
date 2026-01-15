@@ -482,19 +482,48 @@ class SchedulerService:
             return time(9, 15) <= now <= time(15, 30) and datetime.now().weekday() < 5
     
     async def _fetch_market_data(self) -> Dict:
-        """Fetch current market data"""
-        # In production, fetch from broker API or data provider
-        return {
-            "nifty_open": 21800,
-            "nifty_close": 21850,
-            "nifty_change_percent": 0.23,
-            "nifty_gap_pct": 0.15,
-            "vix_close": 14.5,
-            "fii_cash": 1500,
-            "dii_cash": 800,
-            "advances": 1200,
-            "declines": 800
-        }
+        """Fetch current market data using MarketDataProvider"""
+        try:
+            from .market_data import get_market_data_provider
+            provider = get_market_data_provider()
+            
+            # Get real market overview
+            overview = provider.get_market_overview()
+            
+            nifty = overview.get('nifty', {})
+            vix = overview.get('vix', {})
+            
+            # Calculate gap (compare today's open with yesterday's close)
+            nifty_quote = provider.get_quote('NIFTY')
+            gap_pct = 0
+            if nifty_quote and nifty_quote.open and nifty_quote.close:
+                gap_pct = ((nifty_quote.open - nifty_quote.close) / nifty_quote.close) * 100
+            
+            return {
+                "nifty_open": nifty_quote.open if nifty_quote else 0,
+                "nifty_close": nifty.get('ltp', 0),
+                "nifty_change_percent": nifty.get('change_percent', 0),
+                "nifty_gap_pct": gap_pct,
+                "vix_close": vix.get('ltp', 15),
+                "fii_cash": 0,  # Would need separate data source
+                "dii_cash": 0,  # Would need separate data source
+                "advances": 0,  # Would need separate data source
+                "declines": 0   # Would need separate data source
+            }
+        except Exception as e:
+            logger.warning(f"Market data fetch failed, using fallback: {e}")
+            # Fallback to simulated data
+            return {
+                "nifty_open": 21800,
+                "nifty_close": 21850,
+                "nifty_change_percent": 0.23,
+                "nifty_gap_pct": 0.15,
+                "vix_close": 14.5,
+                "fii_cash": 1500,
+                "dii_cash": 800,
+                "advances": 1200,
+                "declines": 800
+            }
     
     def _determine_market_condition(self, data: Dict) -> Dict:
         """Determine market trend and risk"""
