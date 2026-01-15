@@ -104,15 +104,15 @@ export type SignalStatus =
 
 export interface ModelPredictions {
   catboost: {
-    prediction: 'LONG' | 'SHORT'
+    prediction: string
     confidence: number
   }
   tft: {
-    prediction: 'LONG' | 'SHORT'
+    prediction: string
     confidence: number
   }
   stockformer: {
-    prediction: 'LONG' | 'SHORT'
+    prediction: string
     confidence: number
   }
   ensemble_confidence: number
