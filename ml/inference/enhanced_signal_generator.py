@@ -337,25 +337,46 @@ class EnhancedSignalGenerator:
         features: Dict[str, float]
     ) -> List[ModelPrediction]:
         """Call Modal.com ML inference endpoint"""
+        endpoint = self.modal_endpoint.rstrip("/")
+        if not endpoint.endswith("/predict"):
+            endpoint = f"{endpoint}/predict"
+
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                self.modal_endpoint,
-                json={'features': features}
-            )
+            response = await client.post(endpoint, json={"features": features})
             response.raise_for_status()
             data = response.json()
-            
-            # Convert response to ModelPrediction objects
+
+            payload = data.get("result") or data
             predictions = []
-            for model_name, pred_data in data['predictions'].items():
-                predictions.append(ModelPrediction(
-                    model_name=model_name,
-                    prediction=pred_data['prediction'],
-                    confidence=pred_data['confidence'],
-                    features_used=len(features)
-                ))
-            
-            return predictions
+
+            # Legacy payload: {"predictions": {model: {prediction, confidence}}}
+            if "predictions" in payload:
+                for model_name, pred_data in payload["predictions"].items():
+                    predictions.append(
+                        ModelPrediction(
+                            model_name=model_name,
+                            prediction=pred_data["prediction"],
+                            confidence=pred_data.get("confidence", 70.0),
+                            features_used=len(features),
+                        )
+                    )
+                return predictions
+
+            # V2 payload: {"model_predictions": {...}, "model_confidences": {...}}
+            if "model_predictions" in payload:
+                confidences = payload.get("model_confidences", {})
+                for model_name, pred in payload["model_predictions"].items():
+                    predictions.append(
+                        ModelPrediction(
+                            model_name=model_name,
+                            prediction=pred,
+                            confidence=confidences.get(model_name, payload.get("confidence", 70.0)),
+                            features_used=len(features),
+                        )
+                    )
+                return predictions
+
+            raise ValueError("Unsupported inference response format")
     
     def _generate_fallback_predictions(
         self,

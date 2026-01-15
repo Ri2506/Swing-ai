@@ -93,6 +93,17 @@ async def get_all_scanners():
     }
 
 
+@router.get("/menu")
+async def get_screener_menu():
+    """
+    Get screener menu definitions for frontend UI
+    """
+    return {
+        "exchanges": PKSCREENER_MENU["exchanges"],
+        "scan_types": PKSCREENER_MENU["scan_types"],
+    }
+
+
 @router.get("/scanners/all")
 async def get_all_scanner_details():
     """
@@ -419,6 +430,30 @@ async def get_pattern_stocks(
     pkscreener = get_pkscreener()
     result = await pkscreener.run_scanner(pattern_map[pattern_type], "N", "12")
     return result
+
+
+@router.get("/vcp")
+async def get_vcp_patterns():
+    """Alias for VCP pattern scan"""
+    return await get_pattern_stocks("vcp")
+
+
+@router.get("/reversals")
+async def get_reversal_candidates(exchange: str = Query("N", description="Exchange code")):
+    """Alias for reversal scans"""
+    return await run_category_scan("reversal", exchange)
+
+
+@router.get("/institutional")
+async def get_institutional_picks(exchange: str = Query("N", description="Exchange code")):
+    """Alias for smart money scans"""
+    return await run_category_scan("smart_money", exchange)
+
+
+@router.get("/bullish-tomorrow")
+async def get_bullish_tomorrow(limit: int = Query(10, ge=1, le=50)):
+    """Alias for AI bullish signals"""
+    return await get_ml_signals(limit=limit)
 
 
 @router.get("/fo/long-buildup")

@@ -5,6 +5,10 @@
 **Total Strategies**: 20 (100% Complete)  
 **Code Quality**: ✅ No Linter Errors
 
+## Location and usage
+- Implemented in `ml/strategies/all_strategies.py` and wired through `ml/strategies/strategy_selector.py` plus `ml/strategies/regime_detector.py`.
+- Not yet wired into the backend API; integration is intended via the ML inference pipeline.
+
 ---
 
 ## 📊 TIER DISTRIBUTION

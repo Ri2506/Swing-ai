@@ -6,8 +6,8 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, handleApiError } from '../lib/api'
-import { Signal, SignalFilters } from '../types'
+import { api, handleApiError, Signal } from '../lib/api'
+import { SignalFilters } from '../types'
 import { toast } from 'sonner'
 
 // ============================================================================
@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 export function useSignals(filters?: SignalFilters) {
   return useQuery({
     queryKey: ['signals', filters],
-    queryFn: () => api.signals.getAll(filters),
+    queryFn: () => api.signals.getToday(filters),
     staleTime: 30000, // 30 seconds
     refetchInterval: 60000, // Refetch every 60 seconds
   })
@@ -44,7 +44,7 @@ export function useExecuteSignal() {
 
   return useMutation({
     mutationFn: ({ signalId, data }: { signalId: string; data: any }) =>
-      api.signals.execute(signalId, data),
+      api.trades.execute({ signal_id: signalId, ...data }),
     onSuccess: () => {
       toast.success('Signal executed successfully!')
       queryClient.invalidateQueries({ queryKey: ['signals'] })

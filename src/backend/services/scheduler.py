@@ -138,41 +138,25 @@ class SchedulerService:
                 logger.info("Not a trading day, skipping scan")
                 return
             
-            # 1. Get stock candidates from PKScreener
-            candidates = await self.signal_generator.get_candidates()
-            logger.info(f"Got {len(candidates)} candidates")
-            
-            # 2. Fetch latest data for all candidates
-            data = await self.signal_generator.fetch_stock_data(candidates)
-            
-            # 3. Calculate features
-            features = await self.signal_generator.calculate_features(data)
-            
-            # 4. Run AI models
-            predictions = await self.signal_generator.run_inference(features)
-            
-            # 5. Generate signals
-            signals = await self.signal_generator.create_signals(predictions)
+            # Generate signals via the SignalGenerator (handles data + persistence)
+            signals = await self.signal_generator.generate_daily_signals()
             logger.info(f"Generated {len(signals)} signals")
-            
-            # 6. Save to database
-            today = date.today().isoformat()
-            for signal in signals:
-                signal["date"] = today
-                signal["status"] = "active"
-                self.supabase.table("signals").insert(signal).execute()
-            
-            # 7. Send notifications
-            await self.notification_service.broadcast_signals(signals)
+
+            # Notify users if available
+            if self.notification_service:
+                await self.notification_service.broadcast_signals(
+                    [s.__dict__ if hasattr(s, "__dict__") else s for s in signals]
+                )
             
             logger.info("Pre-market scan completed")
             
         except Exception as e:
             logger.error(f"Pre-market scan error: {e}")
-            await self.notification_service.send_admin_alert(
-                "Pre-market scan failed",
-                str(e)
-            )
+            if self.notification_service:
+                await self.notification_service.send_admin_alert(
+                    "Pre-market scan failed",
+                    str(e)
+                )
     
     async def market_open_check(self):
         """
@@ -196,17 +180,19 @@ class SchedulerService:
             
             if abs(gap) > 2:
                 logger.warning(f"Gap {gap}% detected - waiting before trading")
-                await self.notification_service.broadcast_alert(
-                    "Market Gap Alert",
-                    f"Nifty gap of {gap:.1f}% detected. Waiting 30 minutes."
-                )
+                if self.notification_service:
+                    await self.notification_service.broadcast_alert(
+                        "Market Gap Alert",
+                        f"Nifty gap of {gap:.1f}% detected. Waiting 30 minutes."
+                    )
             
             if vix > 25:
                 logger.warning(f"High VIX {vix} - reduced trading")
-                await self.notification_service.broadcast_alert(
-                    "High Volatility Alert",
-                    f"VIX at {vix}. Reducing position sizes."
-                )
+                if self.notification_service:
+                    await self.notification_service.broadcast_alert(
+                        "High Volatility Alert",
+                        f"VIX at {vix}. Reducing position sizes."
+                    )
             
             # Determine market condition
             condition = self._determine_market_condition(market_data)
@@ -240,6 +226,10 @@ class SchedulerService:
                 # Only execute for full_auto users or approved semi_auto
                 if user.get("trading_mode") == "full_auto" or trade.get("approved_at"):
                     try:
+                        if not self.trade_executor:
+                            logger.warning("Trade executor not configured; skipping execution")
+                            continue
+
                         result = await self.trade_executor.execute(trade)
                         
                         if result["success"]:
@@ -442,10 +432,11 @@ class SchedulerService:
             
             # Alert if accuracy dropping
             if avg_accuracy < 55:
-                await self.notification_service.send_admin_alert(
-                    "Model Performance Alert",
-                    f"30-day accuracy dropped to {avg_accuracy:.1f}%. Consider retraining."
-                )
+                if self.notification_service:
+                    await self.notification_service.send_admin_alert(
+                        "Model Performance Alert",
+                        f"30-day accuracy dropped to {avg_accuracy:.1f}%. Consider retraining."
+                    )
             
         except Exception as e:
             logger.error(f"Model check error: {e}")
@@ -567,11 +558,12 @@ class SchedulerService:
         }).eq("id", position["id"]).execute()
         
         # Send notification
-        await self.notification_service.send_to_user(
-            position["user_id"],
-            "position_closed",
-            f"{position['symbol']} closed at ₹{exit_price} ({reason}). P&L: ₹{pnl:.0f}"
-        )
+        if self.notification_service:
+            await self.notification_service.send_to_user(
+                position["user_id"],
+                "position_closed",
+                f"{position['symbol']} closed at ₹{exit_price} ({reason}). P&L: ₹{pnl:.0f}"
+            )
         
         logger.info(f"Position closed: {position['symbol']} - {reason} - P&L: {pnl:.0f}")
     
@@ -598,6 +590,9 @@ class SchedulerService:
             "id, email, notifications_enabled"
         ).eq("notifications_enabled", True).execute()
         
+        if not self.notification_service:
+            return
+
         for user in users.data:
             await self.notification_service.send_daily_summary(user["id"])
     

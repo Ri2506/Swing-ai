@@ -1,432 +1,160 @@
-# 📖 SwingAI API Documentation
+# SwingAI API Documentation
 
-Complete reference for all backend API endpoints.
+This document reflects the endpoints implemented in `src/backend/api/app.py` and the screener routes under `src/backend/api/screener_routes.py` (with a fallback in `src/backend/services/screener_service.py`).
 
-**Base URL**: `https://api.swingai.com`
+## Base URL
 
----
+Local development:
+- http://localhost:8000
 
-## 🔐 Authentication
+OpenAPI:
+- http://localhost:8000/api/openapi.json
+- http://localhost:8000/api/docs
 
-All protected endpoints require JWT token in header:
+## Authentication
+
+Most endpoints require a Supabase JWT:
+
 ```
-Authorization: Bearer <jwt_token>
-```
-
-Get token from Supabase auth after signup/login.
-
----
-
-## 📡 Endpoints
-
-### Authentication
-
-#### POST `/api/auth/signup`
-Create new user account
-
-**Request**:
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!",
-  "full_name": "John Doe",
-  "phone": "+91 9876543210"
-}
+Authorization: Bearer <access_token>
 ```
 
-**Response** (201):
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "full_name": "John Doe"
-  },
-  "token": "eyJxxx..."
-}
-```
+Tokens come from Supabase auth. The backend verifies tokens via Supabase.
 
-#### POST `/api/auth/login`
-Login existing user
+## Core endpoints
 
-**Request**:
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePass123!"
-}
-```
+### Health
+- `GET /`
+- `GET /health`
+- `GET /api/health`
 
-#### POST `/api/auth/logout`
-Logout user (protected)
+### Auth
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh` (refresh_token query param)
+- `POST /api/auth/logout`
+- `POST /api/auth/forgot-password` (email query param)
 
----
+### User
+- `GET /api/user/profile`
+- `PUT /api/user/profile`
+- `GET /api/user/stats`
 
-### User Profile
+### Subscription and payments
+- `GET /api/plans`
+- `POST /api/payments/create-order`
+- `POST /api/payments/verify`
+- `GET /api/payments/history`
 
-#### GET `/api/user/profile`
-Get user profile (protected)
+### Signals
+- `GET /api/signals/today` (optional: segment, direction)
+- `GET /api/signals/{signal_id}`
+- `GET /api/signals/history` (optional: from_date, to_date, status, segment, direction, limit)
+- `GET /api/signals/performance` (optional: days)
 
-**Response**:
-```json
-{
-  "id": "uuid",
-  "email": "user@example.com",
-  "full_name": "John Doe",
-  "phone": "+91 9876543210",
-  "subscription_plan": "pro",
-  "capital": 100000.00,
-  "risk_profile": "moderate",
-  "trading_mode": "semi_auto",
-  "fo_enabled": true,
-  "created_at": "2024-01-01T00:00:00Z"
-}
-```
+Notes:
+- `/api/signals/today` returns grouped arrays: `long_signals`, `short_signals`, `equity_signals`, `futures_signals`, `options_signals`, and `all_signals`.
+- Premium gating applies on `signals`: users without an active/trial subscription only receive `is_premium=false` signals.
 
-#### PUT `/api/user/profile`
-Update user profile (protected)
+### Trades
+- `GET /api/trades` (optional: status, segment, limit)
+- `POST /api/trades/execute`
+- `POST /api/trades/{trade_id}/approve`
+- `POST /api/trades/{trade_id}/close`
 
-**Request**:
-```json
-{
-  "capital": 200000.00,
-  "risk_profile": "aggressive",
-  "trading_mode": "full_auto",
-  "fo_enabled": true
-}
-```
-
----
-
-### Subscription Plans
-
-#### GET `/api/plans`
-Get all subscription plans
-
-**Response**:
-```json
-[
-  {
-    "id": "uuid",
-    "name": "pro",
-    "display_name": "Pro Plan",
-    "price_monthly": 199900,
-    "max_signals_per_day": 25,
-    "max_positions": 10,
-    "features": {
-      "full_auto": true,
-      "futures_trading": true,
-      "options_trading": false
-    }
-  }
-]
-```
-
----
-
-### Payments
-
-#### POST `/api/payments/create-order`
-Create Razorpay order (protected)
-
-**Request**:
-```json
-{
-  "plan_id": "uuid",
-  "billing_cycle": "monthly"
-}
-```
-
-**Response**:
-```json
-{
-  "order_id": "order_xxx",
-  "amount": 199900,
-  "currency": "INR",
-  "razorpay_key": "rzp_live_xxx"
-}
-```
-
-#### POST `/api/payments/verify`
-Verify payment signature (protected)
-
-**Request**:
-```json
-{
-  "order_id": "order_xxx",
-  "payment_id": "pay_xxx",
-  "signature": "xxx"
-}
-```
-
----
-
-### Trading Signals
-
-#### GET `/api/signals/today`
-Get today's signals (protected)
-
-**Query Params**:
-- `limit` (optional): Max signals (default: 50)
-- `segment` (optional): equity | futures | options
-
-**Response**:
-```json
-[
-  {
-    "id": "uuid",
-    "symbol": "TRENT",
-    "segment": "equity",
-    "action": "BUY",
-    "entry_price": 3500.00,
-    "target_price": 3700.00,
-    "stop_loss": 3400.00,
-    "confidence": 0.75,
-    "risk_reward_ratio": 2.0,
-    "position_size": 28,
-    "timeframe": "swing",
-    "status": "active",
-    "generated_at": "2024-01-01T08:30:00Z",
-    "expires_at": "2024-01-01T15:30:00Z"
-  }
-]
-```
-
-#### GET `/api/signals/{signal_id}`
-Get specific signal details (protected)
-
----
-
-### Trade Execution
-
-#### POST `/api/trades/execute`
-Execute a trading signal (protected)
-
-**Request**:
-```json
-{
-  "signal_id": "uuid",
-  "quantity": 28,
-  "order_type": "MARKET"
-}
-```
-
-**Response**:
-```json
-{
-  "trade_id": "uuid",
-  "order_id": "241001000123456",
-  "status": "COMPLETE",
-  "filled_qty": 28,
-  "avg_price": 3505.50,
-  "brokerage": 35.50,
-  "message": "Trade executed successfully"
-}
-```
-
-#### GET `/api/trades/active`
-Get all active trades (protected)
-
-#### GET `/api/trades/history`
-Get trade history (protected)
-
-**Query Params**:
-- `from_date`: YYYY-MM-DD
-- `to_date`: YYYY-MM-DD
-- `status`: all | open | closed
-- `limit`: default 100
-
----
+Notes:
+- `execute` sizes the trade using the user profile (capital, risk_per_trade, max_positions) and sets status to `pending` for `semi_auto` or `open` for `full_auto`.
+- `approve` is used to execute a `pending` trade for `semi_auto` users.
+- `close` accepts optional `exit_price` and `reason`.
 
 ### Portfolio
+- `GET /api/portfolio`
+- `GET /api/portfolio/history` (optional: days)
+- `GET /api/portfolio/performance`
 
-#### GET `/api/portfolio/summary`
-Get portfolio summary (protected)
+### Positions
+- `GET /api/positions`
+- `GET /api/positions/open`
+- `GET /api/positions/{position_id}`
+- `PUT /api/positions/{position_id}` (update stop_loss and/or target)
+- `POST /api/positions/{position_id}/close`
 
-**Response**:
-```json
-{
-  "total_capital": 200000.00,
-  "invested": 150000.00,
-  "available": 50000.00,
-  "current_value": 165000.00,
-  "unrealized_pnl": 15000.00,
-  "unrealized_pnl_percent": 10.0,
-  "realized_pnl": 5000.00,
-  "total_pnl": 20000.00,
-  "win_rate": 0.65,
-  "total_trades": 20,
-  "winning_trades": 13,
-  "losing_trades": 7
-}
-```
+Notes:
+- `PUT /api/positions/{position_id}` only updates `stop_loss` and/or `target`.
+- `POST /api/positions/{position_id}/close` accepts optional `exit_price` and `reason`.
 
-#### GET `/api/portfolio/positions`
-Get all open positions (protected)
+### Market
+- `GET /api/market/status`
+- `GET /api/market/data`
+- `GET /api/market/risk`
 
----
-
-### Market Data
-
-#### GET `/api/market/condition`
-Get current market condition
-
-**Response**:
-```json
-{
-  "nifty": 21500.50,
-  "nifty_change": 1.25,
-  "vix": 12.5,
-  "vix_status": "low",
-  "fii_dii": {
-    "fii": -500.00,
-    "dii": 750.00
-  },
-  "market_status": "open",
-  "risk_level": "normal",
-  "trading_allowed": true
-}
-```
-
-#### GET `/api/market/quote/{symbol}`
-Get live quote for a symbol
-
----
-
-### Broker Integration
-
-#### POST `/api/broker/connect`
-Connect broker account (protected)
-
-**Request**:
-```json
-{
-  "broker": "zerodha",
-  "api_key": "xxx",
-  "api_secret": "xxx",
-  "request_token": "xxx"
-}
-```
-
-#### GET `/api/broker/status`
-Get broker connection status (protected)
-
----
+### Broker
+- `POST /api/broker/connect`
+- `POST /api/broker/disconnect`
+- `GET /api/broker/status`
 
 ### Notifications
-
-#### GET `/api/notifications`
-Get user notifications (protected)
-
-**Query Params**:
-- `unread_only`: boolean
-
-#### PUT `/api/notifications/{id}/read`
-Mark notification as read (protected)
-
----
+- `GET /api/notifications` (optional: unread_only, limit)
+- `POST /api/notifications/{notification_id}/read`
+- `POST /api/notifications/read-all`
 
 ### Watchlist
+- `GET /api/watchlist`
+- `POST /api/watchlist`
+- `DELETE /api/watchlist/{symbol}`
 
-#### GET `/api/watchlist`
-Get user watchlist (protected)
+### Dashboard
+- `GET /api/dashboard/overview`
 
-#### POST `/api/watchlist`
-Add stock to watchlist (protected)
+## WebSocket
 
-**Request**:
-```json
-{
-  "symbol": "TRENT"
-}
+```
+/ws/{token}
 ```
 
----
+A lightweight WebSocket that accepts the Supabase access token in the path and responds to `ping`. Server-side channel subscriptions are not implemented yet; outbound broadcast helpers live in `src/backend/services/realtime.py`.
 
-## 🔌 WebSocket API
+## Screener API
 
-### Connection
+Two implementations can be registered. By default, the app tries the full PKScreener routes first and falls back to the simplified screener service if import fails.
 
-```javascript
-const ws = new WebSocket('wss://api.swingai.com/ws/<jwt_token>')
-```
+### Full routes (when `src/backend/api/screener_routes.py` is active)
+- `GET /api/screener/info`
+- `GET /api/screener/menu`
+- `GET /api/screener/scanners`
+- `GET /api/screener/scanners/all`
+- `GET /api/screener/scan/{scanner_id}`
+- `GET /api/screener/scan/category/{category}`
+- `GET /api/screener/ai/nifty-prediction`
+- `GET /api/screener/ai/trend-forecast/{symbol}`
+- `GET /api/screener/ai/ml-signals`
+- `GET /api/screener/swing-candidates`
+- `GET /api/screener/breakouts`
+- `GET /api/screener/momentum`
+- `GET /api/screener/vcp`
+- `GET /api/screener/reversals`
+- `GET /api/screener/institutional`
+- `GET /api/screener/bullish-tomorrow`
+- `GET /api/screener/volume-surge`
+- `GET /api/screener/patterns/{pattern_type}`
+- `GET /api/screener/fo/long-buildup`
+- `GET /api/screener/fo/short-buildup`
+- `GET /api/screener/smart-money/fii-dii`
+- `POST /api/screener/backtest`
 
-### Subscribe to Symbol
+### Fallback routes (when the screener service is registered)
+- `GET /api/screener/menu`
+- `GET /api/screener/scanners`
+- `GET /api/screener/scan/{scanner_id}`
+- `GET /api/screener/swing-candidates`
+- `GET /api/screener/breakouts`
+- `GET /api/screener/vcp`
+- `GET /api/screener/momentum`
+- `GET /api/screener/reversals`
+- `GET /api/screener/institutional`
+- `GET /api/screener/bullish-tomorrow`
 
-```json
-{
-  "type": "subscribe_symbol",
-  "symbol": "TRENT"
-}
-```
-
-### Events Received
-
-**New Signal**:
-```json
-{
-  "type": "new_signal",
-  "data": {
-    "symbol": "TRENT",
-    "action": "BUY",
-    "entry_price": 3500.00
-  }
-}
-```
-
-**Price Update**:
-```json
-{
-  "type": "price_update",
-  "symbol": "TRENT",
-  "price": 3510.00,
-  "change": 0.29
-}
-```
-
-**Stop Loss Hit**:
-```json
-{
-  "type": "sl_hit",
-  "trade_id": "uuid",
-  "symbol": "TRENT",
-  "exit_price": 3400.00,
-  "pnl": -2800.00
-}
-```
-
----
-
-## 📊 Rate Limits
-
-- **Free**: 10 requests/minute
-- **Starter**: 30 requests/minute
-- **Pro**: 60 requests/minute
-- **Elite**: 120 requests/minute
-
----
-
-## ❌ Error Codes
-
-| Code | Meaning |
-|------|---------|
-| 400 | Bad Request - Invalid input |
-| 401 | Unauthorized - Invalid/missing token |
-| 403 | Forbidden - Plan limit reached |
-| 404 | Not Found |
-| 429 | Too Many Requests - Rate limit |
-| 500 | Internal Server Error |
-
-**Error Response**:
-```json
-{
-  "detail": "Error message here",
-  "error_code": "INVALID_SIGNAL"
-}
-```
-
----
-
-For full interactive API docs, visit:
-- Swagger UI: `https://api.swingai.com/docs`
-- ReDoc: `https://api.swingai.com/redoc`
+## Notes
+- Rate limiting is enforced by middleware (defaults to 60 requests/minute; configurable via env vars).
+- Some endpoints return fallback or simulated data when live data sources are unavailable.
+- Full screener routes require the `pkscreener` package; otherwise the fallback screener is used.

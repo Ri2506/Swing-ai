@@ -342,6 +342,71 @@ class NotificationService:
         
         # Also save to database
         await self._save_notification(user_id, message)
+
+    async def broadcast_signals(self, signals: List[Dict]):
+        """Broadcast a batch of signals to all connected users"""
+        for signal in signals:
+            payload = signal.__dict__ if hasattr(signal, "__dict__") else signal
+            await self.send_signal_notification(payload)
+
+    async def broadcast_alert(self, title: str, message: str, priority: str = "normal"):
+        """Broadcast a general alert to all users"""
+        alert = WSMessage(
+            type=MessageType.ALERT,
+            data={
+                "title": title,
+                "message": message,
+                "priority": priority,
+            },
+        )
+        await self.manager.broadcast(alert)
+
+    async def send_admin_alert(self, title: str, message: str):
+        """Send admin alert (broadcast for now)"""
+        await self.broadcast_alert(title, message, priority="high")
+
+    async def send_to_user(
+        self,
+        user_id: str,
+        notif_type: str,
+        message: str,
+        title: Optional[str] = None,
+        data: Optional[Dict] = None,
+    ):
+        """Send a generic notification to a user and persist it"""
+        payload = {
+            "type": notif_type,
+            "title": title or "Notification",
+            "message": message,
+            "priority": "normal",
+        }
+        if data:
+            payload["data"] = data
+
+        ws_message = WSMessage(type=MessageType.NOTIFICATION, data=payload)
+        await self.manager.send_to_user(user_id, ws_message)
+        await self._save_notification(user_id, ws_message)
+
+    async def send_daily_summary(self, user_id: str):
+        """Send a lightweight daily summary notification"""
+        try:
+            profile = self.supabase.table("user_profiles").select(
+                "total_trades, winning_trades, total_pnl"
+            ).eq("id", user_id).single().execute()
+            data = profile.data or {}
+            total = data.get("total_trades", 0)
+            wins = data.get("winning_trades", 0)
+            win_rate = (wins / total * 100) if total else 0
+            total_pnl = data.get("total_pnl", 0)
+
+            await self.send_to_user(
+                user_id,
+                "daily_summary",
+                f"Trades: {total} | Win rate: {win_rate:.1f}% | P&L: ₹{total_pnl:,.0f}",
+                title="Daily Summary",
+            )
+        except Exception as e:
+            logger.error(f"Failed to send daily summary: {e}")
     
     async def send_sl_alert(self, user_id: str, position: Dict):
         """Send stop loss hit alert"""

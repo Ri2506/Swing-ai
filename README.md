@@ -1,166 +1,127 @@
-# 🚀 SwingAI - AI-Powered Swing Trading Platform
+# SwingAI - AI-powered swing trading platform for Indian markets
 
-**Production-ready AI trading platform for Indian stock markets**
+Production-style stack for signal generation, risk management, and broker workflows.
 
-Built with **Supabase** + **Railway** + **Vercel** + **Modal** | Perfect for solo founders
+## What this repo includes
+- Backend: FastAPI app with Supabase auth/profile, Razorpay payments, signals/trades/portfolio APIs, broker connection storage, notifications, watchlist, dashboard metrics, WebSocket support, and optional scheduler/realtime services.
+- Screener: PKScreener integration with 40+ scanners (full routes) plus a fallback screener service.
+- Frontend: Next.js 14 app with landing page, auth screens, dashboard, signals, trades, portfolio, analytics, settings, and screener UI.
+- ML: 70-feature engineering pipeline, hierarchical ensemble (5-model), regime detection, premium filters, 20 strategy implementations, and Modal inference endpoints (v1 and v2).
+- Infrastructure: Supabase schema, Railway/Vercel configs, and a local dev script.
 
----
+## Current status (code-backed)
+- Backend entrypoint is `src/backend/api/app.py` (the older `src/backend/api/main.py` is a thin wrapper).
+- Signal generation (`src/backend/services/signal_generator.py`) pulls PKScreener candidates, uses simulated feature values when live feeds are missing, and can call an optional Modal inference endpoint.
+- Scheduler and realtime services start in the FastAPI lifespan when `ENABLE_SCHEDULER` / `ENABLE_REDIS` are set; trade execution defaults to a DB-level fallback when broker execution is not wired.
+- WebSocket endpoint is `/ws/{token}` (Supabase JWT in path) with basic ping handling; realtime broadcast hooks exist in `src/backend/services/realtime.py`.
+- Enhanced AI core can be enabled with `ENABLE_ENHANCED_AI` (uses `ENHANCED_ML_INFERENCE_URL` for v2 inference); the standard pipeline remains the fallback.
+- ML training artifacts are not in the repo; `ml/notebooks/` contains a training notebook, while Modal inference expects model files to be uploaded to a Modal volume.
+- Frontend uses Supabase auth and backend APIs; it falls back to a mock user when Supabase env vars are missing (dev mode).
 
-## ✨ Features
-
-- 🤖 **AI Ensemble**: CatBoost + TFT + Stockformer models
-- 📊 **40+ PKScreener Scans**: Stage 2 breakouts, VCP patterns, momentum
-- 💹 **F&O Support**: Futures & Options with Greeks calculation
-- 🔒 **5-Layer Risk Management**: Signal quality → Position sizing → Portfolio limits
-- 🔌 **Multi-Broker**: Zerodha, Angel One, Upstox integration
-- 💳 **Razorpay Payments**: Subscription management built-in
-- 📱 **Real-time WebSocket**: Live price updates & notifications
-
----
-
-## ⚡ Quick Start (Local Development)
+## Quick start (local)
 
 ```bash
-# 1. Clone and install
-git clone https://github.com/yourusername/SwingAI.git
-cd SwingAI
+# 1. Environment
+cp .env.example .env
+
+# 2. Backend
 pip install -r requirements.txt
-
-# 2. Set up environment (create .env file with your keys)
-# Required: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY
-
-# 3. Run backend
 uvicorn src.backend.api.app:app --reload --port 8000
 
-# 4. Run frontend (new terminal)
+# 3. Frontend (new terminal)
 cd src/frontend
 npm install
 npm run dev
 ```
 
-**Frontend**: http://localhost:3000  
-**Backend**: http://localhost:8000  
-**API Docs**: http://localhost:8000/api/docs
+Or run both via:
 
----
-
-## 🚀 Deploy to Production (30 mins)
-
-### Step 1: Supabase (Database)
-1. Create project at [supabase.com](https://supabase.com)
-2. Run `infrastructure/database/complete_schema.sql` in SQL Editor
-3. Copy API keys
-
-### Step 2: Railway (Backend)
-1. Connect GitHub repo at [railway.app](https://railway.app)
-2. Add environment variables
-3. Deploy automatically
-
-### Step 3: Vercel (Frontend)
-1. Import repo at [vercel.com](https://vercel.com)
-2. Set root directory: `src/frontend`
-3. Add environment variables
-4. Deploy
-
-### Step 4: Modal (AI Models)
 ```bash
-pip install modal
-modal token new
-modal deploy ml/inference/modal_inference.py
+./scripts/dev.sh
 ```
 
-📖 **Full guide**: [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/api/docs
 
----
-
-## 📁 Project Structure
+## Project structure
 
 ```
 SwingAI/
 ├── src/
-│   ├── backend/              # FastAPI Backend
-│   │   ├── api/app.py       # Main API with all routes
-│   │   ├── core/            # Config, Database, Security
-│   │   ├── middleware/      # Rate limiting, Logging
-│   │   ├── services/        # Business logic
-│   │   │   ├── signal_generator.py    # AI signal generation
-│   │   │   ├── risk_management.py     # 5-layer risk engine
-│   │   │   ├── fo_trading_engine.py   # F&O calculations
-│   │   │   └── broker_integration.py  # Multi-broker support
-│   │   └── schemas/         # Pydantic models
-│   │
-│   └── frontend/            # Next.js 14 Frontend
-│       ├── app/             # Pages (dashboard, signals, portfolio, etc.)
-│       ├── components/      # 15+ dashboard components
-│       ├── contexts/        # Auth context
-│       └── lib/             # API client, Supabase
-│
+│   ├── backend/              # FastAPI backend
+│   │   ├── api/              # app.py (main entrypoint) + screener routes
+│   │   ├── core/             # config, database, security
+│   │   ├── middleware/       # logging, security headers, rate limiting
+│   │   ├── services/         # signals, risk, F&O, brokers, screener, scheduler
+│   │   ├── schemas/          # Pydantic request/response models
+│   │   └── utils/
+│   └── frontend/             # Next.js 14 frontend
+│       ├── app/              # pages (dashboard, signals, screener, etc.)
+│       ├── components/       # dashboard + shared UI components
+│       ├── contexts/         # auth
+│       ├── hooks/            # data hooks
+│       └── lib/              # API client + Supabase
+├── ml/                        # feature engineering + strategies + inference
+│   ├── features/
+│   ├── filters/
+│   ├── models/
+│   ├── strategies/
+│   ├── inference/
+│   └── notebooks/
 ├── infrastructure/
-│   └── database/complete_schema.sql  # Full Supabase schema
-│
-├── ml/
-│   ├── inference/modal_inference.py  # Modal deployment
-│   └── training/                     # Model training scripts
-│
-├── .github/workflows/deploy.yml      # CI/CD pipeline
-└── DEPLOY_GUIDE.md                   # Step-by-step deployment
+│   └── database/             # Supabase schema
+├── docs/                      # technical docs
+├── scripts/                   # dev helper
+├── railway.toml               # Railway deploy config
+├── vercel.json                # Vercel deploy config
+└── requirements.txt
 ```
 
----
+## Environment variables (backend)
 
-## 🔑 Environment Variables
+See `.env.example` for the full list. The core variables are:
 
 ```env
-# Supabase
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_KEY=xxx
-
-# Razorpay
-RAZORPAY_KEY_ID=rzp_xxx
-RAZORPAY_KEY_SECRET=xxx
-
-# Frontend
-NEXT_PUBLIC_API_URL=https://your-backend.railway.app
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_KEY=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+FRONTEND_URL=
+ML_INFERENCE_URL=
+ENHANCED_ML_INFERENCE_URL=
+ENABLE_SCHEDULER=false
+ENABLE_REDIS=false
+REDIS_URL=redis://localhost:6379/0
+ENABLE_ENHANCED_AI=false
 ```
 
----
+Frontend variables live in Vercel or `.env.local`:
 
-## 💰 Cost Breakdown
+```env
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+```
 
-| Service | Free Tier | Paid |
-|---------|-----------|------|
-| Supabase | 500MB DB | $25/mo |
-| Railway | $5 credit | ~$10/mo |
-| Vercel | 100GB BW | $0-20/mo |
-| Modal | $30 credit | ~$10/mo |
-| **Total** | **$0-5/mo** | **~$25-50/mo** |
+## Documentation
+- `START_HERE.md`
+- `docs/PROJECT_ANALYSIS.md`
+- `docs/DEPLOYMENT_GUIDE.md`
+- `docs/API_DOCUMENTATION.md`
+- `docs/ENHANCED_AI_CORE_V2.md`
+- `docs/MODEL_DEPLOYMENT.md`
+- `docs/STRATEGIES_SYSTEM.md`
+- `FINAL_STRUCTURE.md`
+- `DONE.md`
 
----
+## Tech stack
+- Backend: FastAPI, Supabase, Razorpay, APScheduler
+- Frontend: Next.js 14, React, Tailwind CSS, Framer Motion
+- ML: PyTorch, scikit-learn, CatBoost, XGBoost, feature engineering via `ta`
+- Infrastructure: Railway, Vercel, Supabase, Modal
 
-## 📚 Documentation
-
-- 📖 [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md) - Complete deployment guide
-- 🏗️ [START_HERE.md](START_HERE.md) - Project overview
-- 📡 [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) - API reference
-
----
-
-## 🛠️ Tech Stack
-
-**Backend**: Python 3.11, FastAPI, Supabase, Razorpay  
-**Frontend**: Next.js 14, React, Tailwind CSS, Framer Motion  
-**AI/ML**: CatBoost, PyTorch, Modal  
-**Infrastructure**: Railway, Vercel, Supabase, GitHub Actions
-
----
-
-## 📄 License
-
-MIT License - Free to use for personal and commercial projects.
-
----
-
-**Built with ❤️ for Indian Traders**
+## License
+MIT

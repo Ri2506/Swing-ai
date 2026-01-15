@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     # ============================================================================
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
+    ENABLE_REDIS: bool = os.getenv("ENABLE_REDIS", "False").lower() == "true"
 
     # ============================================================================
     # CORS
@@ -70,6 +71,7 @@ class Settings(BaseSettings):
     # ML MODEL
     # ============================================================================
     ML_INFERENCE_URL: str = os.getenv("ML_INFERENCE_URL", "")
+    ENHANCED_ML_INFERENCE_URL: str = os.getenv("ENHANCED_ML_INFERENCE_URL", "")
     ML_MODEL_PATH: str = os.getenv("ML_MODEL_PATH", "ml/models")
 
     # ============================================================================
@@ -89,6 +91,12 @@ class Settings(BaseSettings):
     # ============================================================================
     WS_MESSAGE_QUEUE_SIZE: int = 100
     WS_HEARTBEAT_INTERVAL: int = 30
+
+    # ============================================================================
+    # FEATURES
+    # ============================================================================
+    ENABLE_SCHEDULER: bool = os.getenv("ENABLE_SCHEDULER", "False").lower() == "true"
+    ENABLE_ENHANCED_AI: bool = os.getenv("ENABLE_ENHANCED_AI", "False").lower() == "true"
 
     # ============================================================================
     # TRADING

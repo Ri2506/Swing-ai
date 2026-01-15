@@ -55,7 +55,7 @@ export default function SettingsPage() {
     max_positions: 5,
     risk_per_trade: 2,
     fo_enabled: false,
-    preferred_option_type: 'CE',
+    preferred_option_type: 'put_options',
     daily_loss_limit: 5,
     weekly_loss_limit: 10,
     monthly_loss_limit: 20,
@@ -96,7 +96,7 @@ export default function SettingsPage() {
         max_positions: profile.max_positions || 5,
         risk_per_trade: profile.risk_per_trade || 2,
         fo_enabled: profile.fo_enabled || false,
-        preferred_option_type: profile.preferred_option_type || 'CE',
+        preferred_option_type: profile.preferred_option_type || 'put_options',
         daily_loss_limit: profile.daily_loss_limit || 5,
         weekly_loss_limit: profile.weekly_loss_limit || 10,
         monthly_loss_limit: profile.monthly_loss_limit || 20,
@@ -497,9 +497,9 @@ export default function SettingsPage() {
                             onChange={(e) => setTradingForm({ ...tradingForm, preferred_option_type: e.target.value })}
                             className="w-full px-3 py-2 bg-background-primary border border-gray-700 rounded-lg text-text-primary focus:outline-none focus:border-primary"
                           >
-                            <option value="CE">Call Options (CE)</option>
-                            <option value="PE">Put Options (PE)</option>
-                            <option value="BOTH">Both</option>
+                            <option value="put_options">Put Options</option>
+                            <option value="futures">Futures</option>
+                            <option value="both">Both</option>
                           </select>
                         </div>
                       )}

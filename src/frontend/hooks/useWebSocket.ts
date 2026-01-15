@@ -7,9 +7,11 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { PriceUpdate, WebSocketMessage } from '../types'
+import { supabase } from '../lib/supabase'
 
 interface WebSocketOptions {
   url?: string
+  token?: string
   reconnectAttempts?: number
   reconnectInterval?: number
   onMessage?: (message: WebSocketMessage) => void
@@ -20,6 +22,7 @@ interface WebSocketOptions {
 export function useWebSocket(options: WebSocketOptions = {}) {
   const {
     url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws',
+    token,
     reconnectAttempts = 5,
     reconnectInterval = 3000,
     onMessage,
@@ -37,9 +40,51 @@ export function useWebSocket(options: WebSocketOptions = {}) {
   // CONNECT
   // ============================================================================
 
-  const connect = useCallback(() => {
+  const resolveWebSocketUrl = useCallback(async () => {
+    const trimmedUrl = url.replace(/\/$/, '')
+    const hasTokenInPath = /\/ws\/[^/]+$/.test(trimmedUrl)
+    let resolvedToken = token
+
+    if (!resolvedToken) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        resolvedToken = session?.access_token || undefined
+      } catch (error) {
+        console.error('Failed to resolve WebSocket token:', error)
+      }
+    }
+
+    if (!resolvedToken) {
+      if (hasTokenInPath) {
+        return trimmedUrl
+      }
+      console.warn('WebSocket token missing; skipping connection')
+      return null
+    }
+
+    if (trimmedUrl.includes('{token}')) {
+      return trimmedUrl.replace('{token}', resolvedToken)
+    }
+
+    if (hasTokenInPath) {
+      return trimmedUrl
+    }
+
+    if (trimmedUrl.endsWith('/ws')) {
+      return `${trimmedUrl}/${resolvedToken}`
+    }
+
+    return `${trimmedUrl}/ws/${resolvedToken}`
+  }, [url, token])
+
+  const connect = useCallback(async () => {
     try {
-      ws.current = new WebSocket(url)
+      const resolvedUrl = await resolveWebSocketUrl()
+      if (!resolvedUrl) {
+        return
+      }
+
+      ws.current = new WebSocket(resolvedUrl)
 
       ws.current.onopen = () => {
         console.log('WebSocket connected')
@@ -93,7 +138,7 @@ export function useWebSocket(options: WebSocketOptions = {}) {
     } catch (error) {
       console.error('Error creating WebSocket:', error)
     }
-  }, [url, reconnectAttempts, reconnectInterval, onMessage, onError, onClose])
+  }, [resolveWebSocketUrl, reconnectAttempts, reconnectInterval, onMessage, onError, onClose])
 
   // ============================================================================
   // DISCONNECT

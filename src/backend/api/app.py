@@ -27,6 +27,10 @@ import razorpay
 
 from ..core.config import settings
 from ..middleware import RateLimitMiddleware, LoggingMiddleware, SecurityHeadersMiddleware
+from ..services.realtime import create_realtime_services
+from ..services.scheduler import SchedulerService
+from ..services.signal_generator import SignalGenerator
+from ..services.trade_execution_service import TradeExecutionService
 from ..schemas import (
     UserSignup, UserLogin, ProfileUpdate, ExecuteTrade, CloseTrade,
     CreateOrder, VerifyPayment, BrokerConnect, WatchlistAdd,
@@ -88,38 +92,12 @@ async def get_user_profile(user = Depends(get_current_user)):
     return result.data
 
 # ============================================================================
-# WEBSOCKET MANAGER
+# RUNTIME SERVICES (realtime + scheduler)
 # ============================================================================
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-    
-    async def connect(self, websocket: WebSocket, user_id: str):
-        await websocket.accept()
-        self.active_connections[user_id] = websocket
-        logger.info(f"WebSocket connected: {user_id}")
-    
-    def disconnect(self, user_id: str):
-        if user_id in self.active_connections:
-            del self.active_connections[user_id]
-            logger.info(f"WebSocket disconnected: {user_id}")
-    
-    async def send_to_user(self, user_id: str, message: dict):
-        if user_id in self.active_connections:
-            try:
-                await self.active_connections[user_id].send_json(message)
-            except:
-                self.disconnect(user_id)
-    
-    async def broadcast(self, message: dict):
-        for user_id, ws in list(self.active_connections.items()):
-            try:
-                await ws.send_json(message)
-            except:
-                self.disconnect(user_id)
-
-manager = ConnectionManager()
+realtime_services: Dict[str, Any] = {}
+manager: Optional[Any] = None
+scheduler_service: Optional[SchedulerService] = None
 
 # ============================================================================
 # APP INITIALIZATION
@@ -128,15 +106,51 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
+    global realtime_services, manager, scheduler_service
     logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.APP_ENV}")
-    
-    # TODO: Initialize scheduler for production
-    # from ..services.scheduler import SchedulerService
-    # scheduler = SchedulerService(...)
-    # scheduler.start()
-    
+
+    # Initialize realtime services (WebSocket manager + notifications)
+    try:
+        realtime_services = create_realtime_services(get_supabase_admin(), settings.REDIS_URL)
+        manager = realtime_services.get("manager")
+        app.state.realtime = realtime_services
+
+        if manager and settings.ENABLE_REDIS:
+            await manager.init_redis()
+            logger.info("✅ Realtime services initialized with Redis")
+        else:
+            logger.info("✅ Realtime services initialized (in-memory)")
+    except Exception as e:
+        logger.error(f"Realtime initialization failed: {e}")
+
+    # Initialize scheduler (optional)
+    if settings.ENABLE_SCHEDULER:
+        try:
+            signal_generator = SignalGenerator(
+                get_supabase_admin(),
+                modal_endpoint=settings.ML_INFERENCE_URL,
+                use_enhanced_ai=settings.ENABLE_ENHANCED_AI,
+                enhanced_modal_endpoint=settings.ENHANCED_ML_INFERENCE_URL,
+            )
+            trade_executor = TradeExecutionService(get_supabase_admin())
+            notification_service = realtime_services.get("notification_service")
+            scheduler_service = SchedulerService(
+                get_supabase_admin(),
+                signal_generator,
+                trade_executor,
+                notification_service,
+            )
+            scheduler_service.start()
+            app.state.scheduler = scheduler_service
+            logger.info("✅ Scheduler started")
+        except Exception as e:
+            logger.error(f"Scheduler initialization failed: {e}")
+
     yield
+
+    if scheduler_service:
+        scheduler_service.stop()
     
     logger.info("🛑 Shutting down SwingAI")
 
@@ -528,6 +542,42 @@ async def get_signal(signal_id: str, user = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/signals/history", tags=["Signals"])
+async def get_signal_history(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    status: Optional[str] = None,
+    segment: Optional[str] = None,
+    direction: Optional[str] = None,
+    limit: int = 100,
+    profile = Depends(get_user_profile)
+):
+    """Get historical signals with optional filters"""
+    try:
+        supabase = get_supabase_admin()
+        query = supabase.table("signals").select("*")
+
+        if from_date:
+            query = query.gte("date", from_date)
+        if to_date:
+            query = query.lte("date", to_date)
+        if status:
+            query = query.eq("status", status)
+        if segment:
+            query = query.eq("segment", segment)
+        if direction:
+            query = query.eq("direction", direction)
+
+        # Premium gating
+        is_premium = profile.get("subscription_status") in ["active", "trial"]
+        if not is_premium:
+            query = query.eq("is_premium", False)
+
+        result = query.order("date", desc=True).limit(limit).execute()
+        return {"signals": result.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/signals/performance", tags=["Signals"])
 async def get_signal_performance(days: int = 30, user = Depends(get_current_user)):
     """Get signal performance metrics"""
@@ -603,7 +653,7 @@ async def execute_trade(data: ExecuteTrade, profile = Depends(get_user_profile))
         # Calculate position size
         capital = float(profile["capital"])
         risk_per_trade = float(profile["risk_per_trade"])
-        entry_price = float(data.custom_sl or sig["entry_price"])
+        entry_price = float(sig["entry_price"])
         stop_loss = float(data.custom_sl or sig["stop_loss"])
         target = float(data.custom_target or sig["target_1"])
         
@@ -742,52 +792,56 @@ async def approve_trade(trade_id: str, user = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+async def _close_trade_record(trade_id: str, data: CloseTrade, user_id: str) -> Dict[str, Any]:
+    """Shared close-trade logic used by trades and positions endpoints"""
+    supabase = get_supabase_admin()
+
+    trade = supabase.table("trades").select("*").eq("id", trade_id).eq("user_id", user_id).single().execute()
+    if not trade.data or trade.data["status"] != "open":
+        raise HTTPException(status_code=400, detail="Trade not found or not open")
+
+    t = trade.data
+    exit_price = data.exit_price or t["entry_price"]
+
+    # Calculate P&L
+    if t["direction"] == "LONG":
+        gross_pnl = (exit_price - t["entry_price"]) * t["quantity"]
+    else:
+        gross_pnl = (t["entry_price"] - exit_price) * t["quantity"]
+
+    # Estimate charges
+    charge_rate = 0.001 if t["segment"] == "EQUITY" else 0.0005
+    charges = abs(t["position_value"]) * charge_rate
+    net_pnl = gross_pnl - charges
+    pnl_percent = (net_pnl / t["position_value"]) * 100 if t["position_value"] else 0
+
+    # Update trade
+    supabase.table("trades").update({
+        "status": "closed",
+        "exit_price": exit_price,
+        "gross_pnl": gross_pnl,
+        "charges": charges,
+        "net_pnl": net_pnl,
+        "pnl_percent": pnl_percent,
+        "exit_reason": data.reason,
+        "closed_at": datetime.utcnow().isoformat()
+    }).eq("id", trade_id).execute()
+
+    # Deactivate position
+    supabase.table("positions").update({"is_active": False}).eq("trade_id", trade_id).execute()
+
+    return {
+        "success": True,
+        "gross_pnl": round(gross_pnl, 2),
+        "net_pnl": round(net_pnl, 2),
+        "pnl_percent": round(pnl_percent, 2)
+    }
+
 @app.post("/api/trades/{trade_id}/close", tags=["Trades"])
-async def close_trade(trade_id: str, data: CloseTrade, user = Depends(get_current_user)):
+async def close_trade(trade_id: str, data: CloseTrade = CloseTrade(), user = Depends(get_current_user)):
     """Close an open trade"""
     try:
-        supabase = get_supabase_admin()
-        
-        trade = supabase.table("trades").select("*").eq("id", trade_id).eq("user_id", user.id).single().execute()
-        if not trade.data or trade.data["status"] != "open":
-            raise HTTPException(status_code=400, detail="Trade not found or not open")
-        
-        t = trade.data
-        exit_price = data.exit_price or t["entry_price"]
-        
-        # Calculate P&L
-        if t["direction"] == "LONG":
-            gross_pnl = (exit_price - t["entry_price"]) * t["quantity"]
-        else:
-            gross_pnl = (t["entry_price"] - exit_price) * t["quantity"]
-        
-        # Estimate charges
-        charge_rate = 0.001 if t["segment"] == "EQUITY" else 0.0005
-        charges = abs(t["position_value"]) * charge_rate
-        net_pnl = gross_pnl - charges
-        pnl_percent = (net_pnl / t["position_value"]) * 100 if t["position_value"] else 0
-        
-        # Update trade
-        supabase.table("trades").update({
-            "status": "closed",
-            "exit_price": exit_price,
-            "gross_pnl": gross_pnl,
-            "charges": charges,
-            "net_pnl": net_pnl,
-            "pnl_percent": pnl_percent,
-            "exit_reason": data.reason,
-            "closed_at": datetime.utcnow().isoformat()
-        }).eq("id", trade_id).execute()
-        
-        # Deactivate position
-        supabase.table("positions").update({"is_active": False}).eq("trade_id", trade_id).execute()
-        
-        return {
-            "success": True,
-            "gross_pnl": round(gross_pnl, 2),
-            "net_pnl": round(net_pnl, 2),
-            "pnl_percent": round(pnl_percent, 2)
-        }
+        return await _close_trade_record(trade_id, data, user.id)
     except HTTPException:
         raise
     except Exception as e:
@@ -887,6 +941,23 @@ async def get_positions(user = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/positions/open", tags=["Positions"])
+async def get_open_positions(user = Depends(get_current_user)):
+    """Get active positions (alias)"""
+    return await get_positions(user)
+
+@app.get("/api/positions/{position_id}", tags=["Positions"])
+async def get_position(position_id: str, user = Depends(get_current_user)):
+    """Get a single position"""
+    try:
+        supabase = get_supabase_admin()
+        result = supabase.table("positions").select("*").eq("id", position_id).eq("user_id", user.id).single().execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Position not found")
+        return result.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.put("/api/positions/{position_id}", tags=["Positions"])
 async def update_position(position_id: str, data: PositionUpdate, user = Depends(get_current_user)):
     """Update position SL/Target"""
@@ -902,9 +973,28 @@ async def update_position(position_id: str, data: PositionUpdate, user = Depends
         if update_data:
             supabase.table("positions").update(update_data).eq("id", position_id).eq("user_id", user.id).execute()
             # Also update the trade
-            supabase.table("trades").update(update_data).eq("id", position_id).eq("user_id", user.id).execute()
+            position = supabase.table("positions").select("trade_id").eq("id", position_id).eq("user_id", user.id).single().execute()
+            trade_id = position.data.get("trade_id") if position.data else None
+            if trade_id:
+                supabase.table("trades").update(update_data).eq("id", trade_id).eq("user_id", user.id).execute()
         
         return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/positions/{position_id}/close", tags=["Positions"])
+async def close_position(position_id: str, data: CloseTrade = CloseTrade(), user = Depends(get_current_user)):
+    """Close an open position by position id"""
+    try:
+        supabase = get_supabase_admin()
+        position = supabase.table("positions").select("trade_id").eq("id", position_id).eq("user_id", user.id).single().execute()
+        if not position.data or not position.data.get("trade_id"):
+            raise HTTPException(status_code=404, detail="Position not found")
+
+        trade_id = position.data["trade_id"]
+        return await _close_trade_record(trade_id, data, user.id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1173,6 +1263,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             return
         
         user_id = user.user.id
+        if not manager:
+            await websocket.accept()
+            await websocket.send_json({"type": "error", "message": "Realtime services not available"})
+            await websocket.close(code=4002)
+            return
+
         await manager.connect(websocket, user_id)
         
         try:

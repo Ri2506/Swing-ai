@@ -10,26 +10,50 @@
 export interface User {
   id: string
   email: string
-  full_name: string
+  full_name?: string
   avatar_url?: string
   phone?: string
-  timezone: string
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
-export interface UserProfile extends User {
-  subscription_tier: SubscriptionTier
-  subscription_status: 'active' | 'inactive' | 'trial' | 'cancelled'
-  subscription_end_date?: string
-  broker_connected: boolean
+export type RiskProfile = 'conservative' | 'moderate' | 'aggressive'
+export type TradingMode = 'signal_only' | 'semi_auto' | 'full_auto'
+export type SubscriptionStatus = 'free' | 'trial' | 'active' | 'expired' | 'cancelled'
+
+export interface UserProfile {
+  id: string
+  email: string
+  full_name?: string
+  phone?: string
+  avatar_url?: string
+  capital: number
+  risk_profile: RiskProfile
   trading_mode: TradingMode
-  total_capital: number
-  risk_percentage: number
+  max_positions: number
+  risk_per_trade: number
+  fo_enabled: boolean
+  preferred_option_type?: 'put_options' | 'futures' | 'both'
+  daily_loss_limit?: number
+  weekly_loss_limit?: number
+  monthly_loss_limit?: number
+  trailing_sl_enabled?: boolean
+  notifications_enabled?: boolean
+  telegram_chat_id?: string
+  subscription_status: SubscriptionStatus
+  subscription_plan_id?: string
+  broker_connected: boolean
+  broker_name?: string
+  total_trades: number
+  winning_trades: number
+  total_pnl: number
+  created_at: string
+  updated_at?: string
+  last_login?: string
+  last_active?: string
 }
 
 export type SubscriptionTier = 'free' | 'starter' | 'pro' | 'elite'
-export type TradingMode = 'signal_only' | 'semi_auto' | 'full_auto'
 
 // ============================================================================
 // TRADING SIGNALS

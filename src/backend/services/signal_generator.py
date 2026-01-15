@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
+from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +75,20 @@ class SignalGenerator:
         self,
         supabase_client,
         modal_endpoint: str = None,
+        use_enhanced_ai: bool = False,
+        enhanced_modal_endpoint: Optional[str] = None,
         min_confidence: float = 65.0,
         min_risk_reward: float = 1.5
     ):
         self.supabase = supabase_client
-        self.modal_endpoint = modal_endpoint or os.getenv("MODAL_INFERENCE_URL", "")
+        self.modal_endpoint = (
+            modal_endpoint
+            or settings.ML_INFERENCE_URL
+            or os.getenv("MODAL_INFERENCE_URL", "")
+        )
+        self.use_enhanced_ai = use_enhanced_ai
+        self.enhanced_modal_endpoint = enhanced_modal_endpoint or settings.ENHANCED_ML_INFERENCE_URL
+        self._enhanced_generator = None
         self.min_confidence = min_confidence
         self.min_risk_reward = min_risk_reward
         
@@ -107,15 +117,24 @@ class SignalGenerator:
             
             # Step 2: Fetch market data
             market_data = await self._get_market_data()
-            
-            # Step 3: Calculate features for each candidate
-            features_list = await self._calculate_features(candidates, market_data)
-            
-            # Step 4: Run AI inference
-            predictions = await self._run_inference(features_list)
-            
-            # Step 5: Generate signals from predictions
-            signals = self._create_signals(predictions, market_data)
+
+            signals: List[GeneratedSignal] = []
+
+            if self.use_enhanced_ai:
+                try:
+                    signals = await self._generate_enhanced_signals(candidates, market_data)
+                except Exception as e:
+                    logger.error(f"Enhanced AI pipeline failed: {e}")
+
+            if not signals:
+                # Step 3: Calculate features for each candidate
+                features_list = await self._calculate_features(candidates, market_data)
+                
+                # Step 4: Run AI inference
+                predictions = await self._run_inference(features_list)
+                
+                # Step 5: Generate signals from predictions
+                signals = self._create_signals(predictions, market_data)
             
             # Step 6: Save signals to database
             await self._save_signals(signals)
@@ -395,6 +414,125 @@ class SignalGenerator:
             })
         
         return predictions
+
+    def _get_enhanced_generator(self):
+        """Lazily initialize the enhanced AI core"""
+        if self._enhanced_generator:
+            return self._enhanced_generator
+        try:
+            from ml.inference.enhanced_signal_generator import EnhancedSignalGenerator
+        except Exception as e:
+            logger.error(f"Enhanced AI import failed: {e}")
+            return None
+
+        self._enhanced_generator = EnhancedSignalGenerator(
+            modal_endpoint=self.enhanced_modal_endpoint or None
+        )
+        return self._enhanced_generator
+
+    @staticmethod
+    def _strip_exchange_suffix(symbol: str) -> str:
+        """Normalize symbols to NSE ticker without suffix."""
+        if symbol.endswith(".NS"):
+            return symbol[:-3]
+        return symbol
+
+    @staticmethod
+    def _map_agreement_score(agreement_score: float) -> int:
+        """Map agreement score (0-100) to the 0-3 bucket used in signals."""
+        if agreement_score >= 80:
+            return 3
+        if agreement_score >= 65:
+            return 2
+        if agreement_score >= 50:
+            return 1
+        return 0
+
+    async def _generate_enhanced_signals(
+        self,
+        candidates: List[str],
+        market_data: Dict,
+    ) -> List[GeneratedSignal]:
+        """Generate signals using the enhanced AI core."""
+        enhanced_generator = self._get_enhanced_generator()
+        if not enhanced_generator:
+            return []
+
+        account_value = float(os.getenv("ENHANCED_AI_ACCOUNT_VALUE", "1000000"))
+        portfolio_positions: List[Dict] = []
+        recent_trades: List[Dict] = []
+        signals: List[GeneratedSignal] = []
+
+        for symbol in candidates:
+            yf_symbol = symbol if symbol.endswith(".NS") else f"{symbol}.NS"
+            enhanced_signal = await enhanced_generator.generate_signal(
+                yf_symbol,
+                account_value,
+                portfolio_positions,
+                recent_trades,
+                market_data,
+            )
+
+            if not enhanced_signal or enhanced_signal.direction == "NEUTRAL":
+                continue
+
+            if enhanced_signal.ai_confidence < self.min_confidence:
+                continue
+
+            risk_reward = enhanced_signal.risk_reward_ratio or 0
+            if risk_reward and risk_reward < self.min_risk_reward:
+                continue
+
+            model_predictions = enhanced_signal.model_predictions or {}
+            tft_score = float(model_predictions.get("TFT", enhanced_signal.ai_confidence))
+            xgb_score = float(model_predictions.get("XGBoost", enhanced_signal.ai_confidence))
+            rf_score = float(
+                model_predictions.get(
+                    "RandomForest",
+                    model_predictions.get("SVM", enhanced_signal.ai_confidence),
+                )
+            )
+            model_agreement = self._map_agreement_score(enhanced_signal.agreement_score)
+
+            if model_agreement < 2:
+                continue
+
+            reasons = [
+                "Enhanced AI core",
+                f"Grade:{enhanced_signal.signal_grade}",
+                f"Regime:{enhanced_signal.regime}",
+                f"Agreement:{round(enhanced_signal.agreement_score, 1)}",
+            ]
+            if enhanced_signal.validation_score:
+                reasons.append(f"Validation:{round(enhanced_signal.validation_score, 1)}")
+
+            is_premium = enhanced_signal.signal_grade in ["PREMIUM", "EXCELLENT"]
+
+            signal = GeneratedSignal(
+                symbol=self._strip_exchange_suffix(enhanced_signal.symbol),
+                exchange="NSE",
+                segment="EQUITY",
+                direction=enhanced_signal.direction,
+                confidence=round(enhanced_signal.ai_confidence, 2),
+                entry_price=round(enhanced_signal.entry_price, 2),
+                stop_loss=round(enhanced_signal.stop_loss, 2),
+                target_1=round(enhanced_signal.target_1, 2),
+                target_2=round(enhanced_signal.target_2, 2),
+                target_3=None,
+                risk_reward=round(risk_reward, 2) if risk_reward else None,
+                catboost_score=round(xgb_score, 2),
+                tft_score=round(tft_score, 2),
+                stockformer_score=round(rf_score, 2),
+                model_agreement=model_agreement,
+                reasons=reasons,
+                is_premium=is_premium,
+                lot_size=self.fo_lot_sizes.get(symbol),
+            )
+
+            signals.append(signal)
+
+        signals.sort(key=lambda x: x.confidence, reverse=True)
+        return signals
     
     def _create_signals(
         self, 

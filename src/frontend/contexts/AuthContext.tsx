@@ -55,16 +55,28 @@ const MOCK_PROFILE: UserProfile = {
   email: 'demo@swingai.com',
   full_name: 'Demo Trader',
   phone: '+91 98765 43210',
-  timezone: 'Asia/Kolkata',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  subscription_tier: 'pro',
-  subscription_status: 'active',
-  subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  broker_connected: true,
+  capital: 500000,
+  risk_profile: 'moderate',
   trading_mode: 'semi_auto',
-  total_capital: 500000,
-  risk_percentage: 2,
+  max_positions: 10,
+  risk_per_trade: 2,
+  fo_enabled: true,
+  preferred_option_type: 'both',
+  daily_loss_limit: 5,
+  weekly_loss_limit: 10,
+  monthly_loss_limit: 20,
+  trailing_sl_enabled: true,
+  notifications_enabled: true,
+  telegram_chat_id: '',
+  subscription_status: 'active',
+  subscription_plan_id: undefined,
+  broker_connected: true,
+  broker_name: 'zerodha',
+  total_trades: 42,
+  winning_trades: 26,
+  total_pnl: 12500,
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -181,12 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         // Create profile in database
         const { error: profileError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .insert({
             id: data.user.id,
             email: data.user.email,
             full_name: fullName,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           })
 
         if (profileError) {
