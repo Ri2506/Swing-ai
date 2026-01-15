@@ -1248,12 +1248,24 @@ async def get_dashboard_overview(profile = Depends(get_user_profile)):
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
-# WEBSOCKET ENDPOINT
+# WEBSOCKET ENDPOINT (Enhanced with subscribe/unsubscribe)
 # ============================================================================
 
 @app.websocket("/ws/{token}")
 async def websocket_endpoint(websocket: WebSocket, token: str):
-    """WebSocket endpoint for real-time updates"""
+    """
+    WebSocket endpoint for real-time updates.
+    
+    Supported message types:
+    - ping: Keep-alive
+    - subscribe: Subscribe to channels (symbols, signals, portfolio)
+    - unsubscribe: Unsubscribe from channels
+    
+    Message format:
+    {"action": "subscribe", "channel": "price", "symbols": ["RELIANCE", "TCS"]}
+    {"action": "unsubscribe", "channel": "price", "symbols": ["RELIANCE"]}
+    """
+    user_id = None
     try:
         supabase = get_supabase()
         user = supabase.auth.get_user(token)
@@ -1274,13 +1286,133 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         try:
             while True:
                 data = await websocket.receive_text()
+                
+                # Handle ping
                 if data == "ping":
                     await websocket.send_json({"type": "pong", "timestamp": datetime.utcnow().isoformat()})
+                    continue
+                
+                # Parse JSON messages
+                try:
+                    message = json.loads(data)
+                    action = message.get("action", "")
+                    channel = message.get("channel", "")
+                    
+                    if action == "subscribe":
+                        await handle_subscribe(user_id, message)
+                        await websocket.send_json({
+                            "type": "subscribed",
+                            "channel": channel,
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                    
+                    elif action == "unsubscribe":
+                        await handle_unsubscribe(user_id, message)
+                        await websocket.send_json({
+                            "type": "unsubscribed", 
+                            "channel": channel,
+                            "timestamp": datetime.utcnow().isoformat()
+                        })
+                    
+                    elif action == "get_prices":
+                        # One-time price fetch
+                        symbols = message.get("symbols", [])
+                        await send_price_update(user_id, symbols)
+                    
+                    else:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Unknown action: {action}"
+                        })
+                        
+                except json.JSONDecodeError:
+                    # Not JSON, just echo back for debugging
+                    await websocket.send_json({
+                        "type": "echo",
+                        "data": data,
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                    
         except WebSocketDisconnect:
-            manager.disconnect(user_id)
+            if user_id:
+                manager.disconnect(user_id)
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
+        if user_id and manager:
+            manager.disconnect(user_id)
         await websocket.close(code=4000)
+
+
+async def handle_subscribe(user_id: str, message: Dict):
+    """Handle WebSocket subscription requests"""
+    channel = message.get("channel", "")
+    symbols = message.get("symbols", [])
+    
+    if channel == "price" and symbols:
+        for symbol in symbols:
+            manager.subscribe_to_symbol(user_id, symbol)
+        logger.info(f"User {user_id} subscribed to price updates for: {symbols}")
+    
+    elif channel == "signals":
+        if user_id in manager.user_subscriptions:
+            manager.user_subscriptions[user_id].add("signals")
+        logger.info(f"User {user_id} subscribed to signal updates")
+    
+    elif channel == "portfolio":
+        if user_id in manager.user_subscriptions:
+            manager.user_subscriptions[user_id].add("portfolio")
+        logger.info(f"User {user_id} subscribed to portfolio updates")
+    
+    elif channel == "notifications":
+        if user_id in manager.user_subscriptions:
+            manager.user_subscriptions[user_id].add("notifications")
+        logger.info(f"User {user_id} subscribed to notifications")
+
+
+async def handle_unsubscribe(user_id: str, message: Dict):
+    """Handle WebSocket unsubscription requests"""
+    channel = message.get("channel", "")
+    symbols = message.get("symbols", [])
+    
+    if channel == "price" and symbols:
+        for symbol in symbols:
+            manager.unsubscribe_from_symbol(user_id, symbol)
+        logger.info(f"User {user_id} unsubscribed from price updates for: {symbols}")
+    
+    elif channel in ["signals", "portfolio", "notifications"]:
+        if user_id in manager.user_subscriptions:
+            manager.user_subscriptions[user_id].discard(channel)
+        logger.info(f"User {user_id} unsubscribed from {channel}")
+
+
+async def send_price_update(user_id: str, symbols: List[str]):
+    """Send price update to specific user"""
+    try:
+        from ..services.market_data import get_market_data_provider
+        provider = get_market_data_provider()
+        
+        quotes = provider.get_quotes_batch(symbols)
+        
+        price_data = []
+        for symbol, quote in quotes.items():
+            if quote:
+                price_data.append({
+                    "symbol": symbol,
+                    "ltp": quote.ltp,
+                    "change": quote.change,
+                    "change_percent": quote.change_percent,
+                    "volume": quote.volume,
+                    "timestamp": quote.timestamp.isoformat()
+                })
+        
+        if manager and user_id in manager.active_connections:
+            await manager.active_connections[user_id].send_json({
+                "type": "price_update",
+                "data": price_data,
+                "timestamp": datetime.utcnow().isoformat()
+            })
+    except Exception as e:
+        logger.error(f"Failed to send price update: {e}")
 
 # ============================================================================
 # SCREENER ROUTES (PKScreener Real-time)
