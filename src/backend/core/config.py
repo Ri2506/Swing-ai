@@ -106,6 +106,12 @@ class Settings(BaseSettings):
     PRE_MARKET_SCAN_TIME: str = "08:30"
     POST_MARKET_PROCESS_TIME: str = "16:00"
 
+    # ============================================================================
+    # ADMIN
+    # ============================================================================
+    ADMIN_EMAILS: List[str] = []  # Loaded from env: ADMIN_EMAILS=admin@example.com,admin2@example.com
+    RAZORPAY_WEBHOOK_SECRET: Optional[str] = os.getenv("RAZORPAY_WEBHOOK_SECRET")
+
     class Config:
         env_file = ".env"
         case_sensitive = True
