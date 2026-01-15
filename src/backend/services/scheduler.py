@@ -471,9 +471,15 @@ class SchedulerService:
             return today not in holidays
     
     def _is_market_hours(self) -> bool:
-        """Check if within market hours"""
-        now = datetime.now().time()
-        return time(9, 15) <= now <= time(15, 30) and datetime.now().weekday() < 5
+        """Check if within market hours using MarketDataProvider"""
+        try:
+            from .market_data import get_market_data_provider
+            provider = get_market_data_provider()
+            return provider.is_market_open()
+        except Exception as e:
+            logger.warning(f"Market data provider not available, using fallback: {e}")
+            now = datetime.now().time()
+            return time(9, 15) <= now <= time(15, 30) and datetime.now().weekday() < 5
     
     async def _fetch_market_data(self) -> Dict:
         """Fetch current market data"""
