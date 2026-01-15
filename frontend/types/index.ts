@@ -189,31 +189,39 @@ export interface Position {
 export interface Trade {
   id: string
   user_id: string
-  signal_id: string
-  position_id: string
+  signal_id?: string
+  position_id?: string
   symbol: string
   exchange: 'NSE' | 'BSE'
   segment: 'EQUITY' | 'FUTURES' | 'OPTIONS'
   direction: 'LONG' | 'SHORT'
   quantity: number
+  lots?: number
   entry_price: number
-  exit_price: number
+  average_price?: number  // Alias
+  exit_price?: number
   stop_loss: number
   target: number
-  realized_pnl: number
-  realized_pnl_percentage: number
-  exit_reason: ExitReason
-  holding_duration_hours: number
-  opened_at: string
-  closed_at: string
-  charges: {
-    brokerage: number
-    stt: number
-    exchange_fee: number
-    gst: number
-    sebi_charges: number
-    stamp_duty: number
-    total: number
+  realized_pnl?: number
+  net_pnl?: number  // Alias
+  gross_pnl?: number
+  pnl_percent?: number
+  realized_pnl_percentage?: number
+  exit_reason?: string
+  holding_duration_hours?: number
+  status?: 'pending' | 'approved' | 'open' | 'closed' | 'cancelled' | 'rejected'
+  created_at?: string
+  executed_at?: string
+  opened_at?: string
+  closed_at?: string
+  charges?: {
+    brokerage?: number
+    stt?: number
+    exchange_fee?: number
+    gst?: number
+    sebi_charges?: number
+    stamp_duty?: number
+    total?: number
   }
 }
 
