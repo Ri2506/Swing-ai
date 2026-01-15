@@ -1454,6 +1454,17 @@ except Exception as e:
     logger.warning(f"Payment routes not available: {e}")
 
 # ============================================================================
+# ADMIN ROUTES
+# ============================================================================
+
+try:
+    from .admin_routes import register_admin_routes
+    register_admin_routes(app)
+    logger.info("✅ Admin routes registered")
+except Exception as e:
+    logger.warning(f"Admin routes not available: {e}")
+
+# ============================================================================
 # MARKET DATA ROUTES
 # ============================================================================
 
