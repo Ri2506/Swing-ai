@@ -55,7 +55,9 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await auth.resetPassword(data.email)
+      await auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
       setEmailSent(true)
       toast.success('Password reset email sent!')
     } catch (error: any) {
