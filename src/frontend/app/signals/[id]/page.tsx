@@ -1,15 +1,17 @@
 // ============================================================================
 // SWINGAI - SIGNAL DETAIL PAGE
-// Detailed view of individual signal with chart and analysis
+// Detailed view of individual signal with live API data, chart, and execute/approve flows
 // ============================================================================
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import { useAuth } from '../../../contexts/AuthContext'
+import { api, handleApiError, Signal } from '../../../lib/api'
 import {
   ArrowLeft,
   TrendingUp,
@@ -24,59 +26,239 @@ import {
   Zap,
   Brain,
   Activity,
+  Loader2,
+  RefreshCw,
+  Play,
+  ThumbsUp,
+  ThumbsDown,
+  Bell,
+  BookmarkPlus,
 } from 'lucide-react'
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface DetailedSignal extends Signal {
+  current_price?: number
+  model_predictions?: {
+    catboost: { prediction: string; confidence: number }
+    tft: { prediction: string; confidence: number }
+    stockformer: { prediction: string; confidence: number }
+    ensemble_confidence: number
+    model_agreement: number
+  }
+  technical_analysis?: {
+    rsi: number
+    macd: { value: number; signal: number; histogram: number }
+    volume_ratio: number
+    support_levels: number[]
+    resistance_levels: number[]
+  }
+  strategy_confluence?: number
+  active_strategies?: string[]
+  market_regime?: string
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function SignalDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { user } = useAuth()
-  const [signal, setSignal] = useState<any>(null)
+  const { user, profile } = useAuth()
+  const signalId = params.id as string
+  
+  // State
+  const [signal, setSignal] = useState<DetailedSignal | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [executing, setExecuting] = useState(false)
+  const [approving, setApproving] = useState(false)
+  const [rejecting, setRejecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [livePrice, setLivePrice] = useState<number | null>(null)
 
+  // Fetch signal data from API
+  const fetchSignal = useCallback(async () => {
+    if (!signalId) return
+    
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Fetch signal details
+      const signalData = await api.signals.getById(signalId)
+      setSignal(signalData as DetailedSignal)
+      
+      // Fetch live price for the symbol
+      try {
+        const quoteData = await api.market.getQuote(signalData.symbol)
+        setLivePrice(quoteData.ltp as number)
+      } catch (e) {
+        console.warn('Could not fetch live price:', e)
+      }
+      
+    } catch (err) {
+      setError(handleApiError(err))
+      toast.error('Failed to load signal')
+    } finally {
+      setLoading(false)
+    }
+  }, [signalId])
+
+  // Initial load
   useEffect(() => {
     if (!user) {
       router.push('/login')
       return
     }
+    fetchSignal()
+  }, [user, router, fetchSignal])
 
-    // Mock signal data (in real app, fetch from API)
-    setSignal({
-      id: params.id,
-      symbol: 'RELIANCE',
-      exchange: 'NSE',
-      segment: 'EQUITY',
-      direction: 'LONG',
-      entry_price: 2456.75,
-      current_price: 2468.30,
-      stop_loss: 2400.00,
-      target: 2550.00,
-      confidence: 85,
-      risk_reward_ratio: 2.5,
-      position_size: 100,
-      status: 'active',
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      valid_until: new Date(Date.now() + 82800000).toISOString(),
-      model_predictions: {
-        catboost: { prediction: 'LONG', confidence: 82 },
-        tft: { prediction: 'LONG', confidence: 88 },
-        stockformer: { prediction: 'LONG', confidence: 85 },
-        ensemble_confidence: 85,
-        model_agreement: 1.0,
-      },
-      technical_analysis: {
-        rsi: 58.3,
-        macd: { value: 12.5, signal: 10.2, histogram: 2.3 },
-        volume_ratio: 1.8,
-        support_levels: [2400, 2420, 2440],
-        resistance_levels: [2490, 2520, 2550],
-      },
-    })
-  }, [user, router, params.id])
+  // Refresh price periodically
+  useEffect(() => {
+    if (!signal?.symbol) return
+    
+    const interval = setInterval(async () => {
+      try {
+        const quoteData = await api.market.getQuote(signal.symbol)
+        setLivePrice(quoteData.ltp as number)
+      } catch (e) {
+        // Silently fail
+      }
+    }, 30000) // Every 30 seconds
+    
+    return () => clearInterval(interval)
+  }, [signal?.symbol])
 
-  if (!user || !signal) return null
+  // Execute trade
+  const handleExecute = async () => {
+    if (!signal) return
+    
+    setExecuting(true)
+    try {
+      const result = await api.trades.execute({ signal_id: signal.id })
+      
+      if (result.success) {
+        toast.success('Trade executed successfully!')
+        router.push('/portfolio')
+      } else {
+        toast.error('Failed to execute trade')
+      }
+    } catch (err) {
+      toast.error(handleApiError(err))
+    } finally {
+      setExecuting(false)
+    }
+  }
 
-  const isProfitable = signal.current_price > signal.entry_price
-  const pnl = (signal.current_price - signal.entry_price) * signal.position_size
-  const pnlPercent = ((signal.current_price - signal.entry_price) / signal.entry_price) * 100
+  // Approve signal (for semi-auto users)
+  const handleApprove = async () => {
+    if (!signal) return
+    
+    setApproving(true)
+    try {
+      const result = await api.signals.approve(signal.id)
+      
+      if (result.success) {
+        toast.success('Signal approved! Trade will be executed at market open.')
+        fetchSignal() // Refresh
+      }
+    } catch (err) {
+      toast.error(handleApiError(err))
+    } finally {
+      setApproving(false)
+    }
+  }
+
+  // Reject signal
+  const handleReject = async () => {
+    if (!signal) return
+    
+    setRejecting(true)
+    try {
+      const result = await api.signals.reject(signal.id)
+      
+      if (result.success) {
+        toast.success('Signal rejected')
+        router.push('/signals')
+      }
+    } catch (err) {
+      toast.error(handleApiError(err))
+    } finally {
+      setRejecting(false)
+    }
+  }
+
+  // Add to watchlist
+  const handleAddToWatchlist = async () => {
+    if (!signal) return
+    
+    try {
+      await api.watchlist.add(signal.symbol)
+      toast.success(`${signal.symbol} added to watchlist`)
+    } catch (err) {
+      toast.error(handleApiError(err))
+    }
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+          <p className="text-text-secondary">Loading signal...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || !signal) {
+    return (
+      <div className="min-h-screen bg-background-primary flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-text-primary mb-2">Signal Not Found</h2>
+          <p className="text-text-secondary mb-4">{error || 'The signal you are looking for does not exist.'}</p>
+          <Link href="/signals" className="text-primary hover:underline">
+            ← Back to Signals
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Calculate P&L
+  const currentPrice = livePrice || signal.current_price || signal.entry_price
+  const isProfitable = currentPrice > signal.entry_price
+  const pnl = (currentPrice - signal.entry_price) * (signal.position_size || 100)
+  const pnlPercent = ((currentPrice - signal.entry_price) / signal.entry_price) * 100
+  
+  // Determine user's trading mode
+  const tradingMode = profile?.trading_mode || 'signal_only'
+  const canExecute = tradingMode !== 'signal_only' && profile?.broker_connected
+  const needsApproval = tradingMode === 'semi_auto'
+
+  // Model predictions with defaults
+  const modelPredictions = signal.model_predictions || {
+    catboost: { prediction: signal.direction, confidence: signal.catboost_score || signal.confidence },
+    tft: { prediction: signal.direction, confidence: signal.tft_score || signal.confidence },
+    stockformer: { prediction: signal.direction, confidence: signal.stockformer_score || signal.confidence },
+    ensemble_confidence: signal.confidence,
+    model_agreement: signal.model_agreement / 3 || 0.9,
+  }
+
+  // Technical analysis with defaults
+  const technicalAnalysis = signal.technical_analysis || {
+    rsi: 50,
+    macd: { value: 0, signal: 0, histogram: 0 },
+    volume_ratio: 1.0,
+    support_levels: [signal.stop_loss],
+    resistance_levels: [signal.target_1],
+  }
 
   return (
     <div className="min-h-screen bg-background-primary">
@@ -104,14 +286,52 @@ export default function SignalDetailPage() {
                   <span className="px-3 py-1 rounded-full text-sm bg-gray-800 text-text-secondary">
                     {signal.segment}
                   </span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    signal.status === 'active' ? 'bg-blue-500/20 text-blue-400' :
+                    signal.status === 'triggered' ? 'bg-green-500/20 text-green-400' :
+                    'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {signal.status?.toUpperCase()}
+                  </span>
                 </div>
-                <p className="text-text-secondary mt-1">{signal.exchange} • Signal #{signal.id}</p>
+                <p className="text-text-secondary mt-1">{signal.exchange || 'NSE'} • Signal #{signal.id?.slice(0, 8)}</p>
               </div>
             </div>
 
-            <button className="px-6 py-3 bg-gradient-primary text-white rounded-xl font-medium hover:shadow-glow-md transition-all">
-              Execute Trade
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={fetchSignal}
+                className="p-2 rounded-lg hover:bg-background-elevated transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="w-5 h-5 text-text-muted" />
+              </button>
+              
+              {canExecute && signal.status === 'active' && (
+                <button 
+                  onClick={handleExecute}
+                  disabled={executing}
+                  className="px-6 py-3 bg-gradient-primary text-white rounded-xl font-medium hover:shadow-glow-md transition-all disabled:opacity-50"
+                >
+                  {executing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 inline mr-2" />
+                      Execute Trade
+                    </>
+                  )}
+                </button>
+              )}
+              
+              {!canExecute && (
+                <div className="text-sm text-text-muted">
+                  {!profile?.broker_connected 
+                    ? 'Connect broker to execute'
+                    : 'Signal-only mode'}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -121,7 +341,11 @@ export default function SignalDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Price Info */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h2 className="text-xl font-bold text-text-primary mb-6">Price Information</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
@@ -133,7 +357,8 @@ export default function SignalDetailPage() {
                 <div>
                   <div className="text-text-muted text-sm mb-1">Current Price</div>
                   <div className={`text-xl font-bold font-mono ${isProfitable ? 'text-success' : 'text-danger'}`}>
-                    ₹{signal.current_price.toFixed(2)}
+                    ₹{currentPrice.toFixed(2)}
+                    {livePrice && <span className="text-xs text-text-muted ml-1">LIVE</span>}
                   </div>
                 </div>
                 <div>
@@ -145,7 +370,7 @@ export default function SignalDetailPage() {
                 <div>
                   <div className="text-text-muted text-sm mb-1">Target</div>
                   <div className="text-xl font-bold text-success font-mono">
-                    ₹{signal.target.toFixed(2)}
+                    ₹{signal.target_1.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -154,7 +379,7 @@ export default function SignalDetailPage() {
               <div className="mt-6 p-4 rounded-xl bg-background-elevated border border-gray-800">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-text-muted text-sm mb-1">Unrealized P&L</div>
+                    <div className="text-text-muted text-sm mb-1">Unrealized P&L (per 100 shares)</div>
                     <div className={`text-2xl font-bold font-mono ${isProfitable ? 'text-success' : 'text-danger'}`}>
                       {isProfitable ? '+' : ''}₹{pnl.toFixed(2)}
                     </div>
@@ -166,11 +391,41 @@ export default function SignalDetailPage() {
                     </div>
                   </div>
                 </div>
+                
+                {/* Progress to target/SL */}
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs text-text-muted mb-1">
+                    <span>SL: ₹{signal.stop_loss.toFixed(0)}</span>
+                    <span>Entry: ₹{signal.entry_price.toFixed(0)}</span>
+                    <span>Target: ₹{signal.target_1.toFixed(0)}</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden relative">
+                    <div 
+                      className="absolute h-full bg-gray-600" 
+                      style={{ 
+                        left: '0%', 
+                        width: `${((signal.entry_price - signal.stop_loss) / (signal.target_1 - signal.stop_loss)) * 100}%` 
+                      }}
+                    />
+                    <div 
+                      className={`absolute h-full ${isProfitable ? 'bg-success' : 'bg-danger'}`}
+                      style={{ 
+                        left: `${((signal.entry_price - signal.stop_loss) / (signal.target_1 - signal.stop_loss)) * 100}%`,
+                        width: `${Math.abs(((currentPrice - signal.entry_price) / (signal.target_1 - signal.stop_loss)) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* AI Model Predictions */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h2 className="text-xl font-bold text-text-primary mb-6">AI Model Predictions</h2>
 
               <div className="space-y-4">
@@ -188,21 +443,19 @@ export default function SignalDetailPage() {
                     </div>
                     <div className="text-right">
                       <div className={`text-lg font-bold ${
-                        signal.model_predictions.catboost.prediction === 'LONG'
-                          ? 'text-success'
-                          : 'text-danger'
+                        modelPredictions.catboost.prediction === 'LONG' ? 'text-success' : 'text-danger'
                       }`}>
-                        {signal.model_predictions.catboost.prediction}
+                        {modelPredictions.catboost.prediction}
                       </div>
                       <div className="text-sm text-text-secondary">
-                        {signal.model_predictions.catboost.confidence}% confidence
+                        {modelPredictions.catboost.confidence?.toFixed(0)}% confidence
                       </div>
                     </div>
                   </div>
                   <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
-                      style={{ width: `${signal.model_predictions.catboost.confidence}%` }}
+                      style={{ width: `${modelPredictions.catboost.confidence}%` }}
                     />
                   </div>
                 </div>
@@ -221,21 +474,19 @@ export default function SignalDetailPage() {
                     </div>
                     <div className="text-right">
                       <div className={`text-lg font-bold ${
-                        signal.model_predictions.tft.prediction === 'LONG'
-                          ? 'text-success'
-                          : 'text-danger'
+                        modelPredictions.tft.prediction === 'LONG' ? 'text-success' : 'text-danger'
                       }`}>
-                        {signal.model_predictions.tft.prediction}
+                        {modelPredictions.tft.prediction}
                       </div>
                       <div className="text-sm text-text-secondary">
-                        {signal.model_predictions.tft.confidence}% confidence
+                        {modelPredictions.tft.confidence?.toFixed(0)}% confidence
                       </div>
                     </div>
                   </div>
                   <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-purple-500 to-purple-400"
-                      style={{ width: `${signal.model_predictions.tft.confidence}%` }}
+                      style={{ width: `${modelPredictions.tft.confidence}%` }}
                     />
                   </div>
                 </div>
@@ -254,21 +505,19 @@ export default function SignalDetailPage() {
                     </div>
                     <div className="text-right">
                       <div className={`text-lg font-bold ${
-                        signal.model_predictions.stockformer.prediction === 'LONG'
-                          ? 'text-success'
-                          : 'text-danger'
+                        modelPredictions.stockformer.prediction === 'LONG' ? 'text-success' : 'text-danger'
                       }`}>
-                        {signal.model_predictions.stockformer.prediction}
+                        {modelPredictions.stockformer.prediction}
                       </div>
                       <div className="text-sm text-text-secondary">
-                        {signal.model_predictions.stockformer.confidence}% confidence
+                        {modelPredictions.stockformer.confidence?.toFixed(0)}% confidence
                       </div>
                     </div>
                   </div>
                   <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-green-500 to-green-400"
-                      style={{ width: `${signal.model_predictions.stockformer.confidence}%` }}
+                      style={{ width: `${modelPredictions.stockformer.confidence}%` }}
                     />
                   </div>
                 </div>
@@ -283,92 +532,145 @@ export default function SignalDetailPage() {
                       <div>
                         <div className="font-bold text-white">Ensemble Prediction</div>
                         <div className="text-sm text-blue-200">
-                          {(signal.model_predictions.model_agreement * 100).toFixed(0)}% Model Agreement
+                          {(modelPredictions.model_agreement * 100).toFixed(0)}% Model Agreement
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-white">
-                        {signal.model_predictions.ensemble_confidence}%
+                        {modelPredictions.ensemble_confidence?.toFixed(0)}%
                       </div>
                       <div className="text-sm text-blue-200">Confidence</div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+              
+              {/* Strategy Confluence */}
+              {signal.strategy_confluence && (
+                <div className="mt-4 p-4 rounded-xl bg-background-elevated border border-gray-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-text-secondary">Strategy Confluence</span>
+                    <span className="text-xl font-bold text-primary">{signal.strategy_confluence.toFixed(0)}%</span>
+                  </div>
+                  {signal.active_strategies && signal.active_strategies.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {signal.active_strategies.slice(0, 3).map((strategy, i) => (
+                        <span key={i} className="px-2 py-1 rounded bg-primary/10 text-primary text-xs">
+                          {strategy}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
 
             {/* Technical Analysis */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h2 className="text-xl font-bold text-text-primary mb-6">Technical Analysis</h2>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
                   <div className="text-text-muted text-sm mb-1">RSI (14)</div>
-                  <div className="text-2xl font-bold text-text-primary">{signal.technical_analysis.rsi}</div>
-                  <div className="text-xs text-text-secondary mt-1">
-                    {signal.technical_analysis.rsi > 70 ? 'Overbought' : signal.technical_analysis.rsi < 30 ? 'Oversold' : 'Neutral'}
+                  <div className="text-2xl font-bold text-text-primary">{technicalAnalysis.rsi?.toFixed(1)}</div>
+                  <div className={`text-xs mt-1 ${
+                    technicalAnalysis.rsi > 70 ? 'text-danger' : 
+                    technicalAnalysis.rsi < 30 ? 'text-success' : 
+                    'text-text-secondary'
+                  }`}>
+                    {technicalAnalysis.rsi > 70 ? 'Overbought' : 
+                     technicalAnalysis.rsi < 30 ? 'Oversold' : 'Neutral'}
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
                   <div className="text-text-muted text-sm mb-1">MACD</div>
-                  <div className="text-2xl font-bold text-text-primary">{signal.technical_analysis.macd.value}</div>
-                  <div className="text-xs text-success mt-1">Bullish Crossover</div>
+                  <div className="text-2xl font-bold text-text-primary">{technicalAnalysis.macd?.value?.toFixed(2)}</div>
+                  <div className={`text-xs mt-1 ${
+                    technicalAnalysis.macd?.histogram > 0 ? 'text-success' : 'text-danger'
+                  }`}>
+                    {technicalAnalysis.macd?.histogram > 0 ? 'Bullish' : 'Bearish'} Momentum
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
                   <div className="text-text-muted text-sm mb-1">Volume Ratio</div>
-                  <div className="text-2xl font-bold text-text-primary">{signal.technical_analysis.volume_ratio}x</div>
-                  <div className="text-xs text-text-secondary mt-1">Above Average</div>
+                  <div className="text-2xl font-bold text-text-primary">{technicalAnalysis.volume_ratio?.toFixed(1)}x</div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    {technicalAnalysis.volume_ratio > 1.5 ? 'High Volume' : 
+                     technicalAnalysis.volume_ratio < 0.5 ? 'Low Volume' : 'Average'}
+                  </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
                   <div className="text-text-muted text-sm mb-1">Risk:Reward</div>
-                  <div className="text-2xl font-bold text-success">1:{signal.risk_reward_ratio}</div>
-                  <div className="text-xs text-text-secondary mt-1">Favorable</div>
+                  <div className="text-2xl font-bold text-success">1:{signal.risk_reward?.toFixed(1)}</div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    {signal.risk_reward >= 2 ? 'Favorable' : 'Moderate'}
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Signal Status */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h3 className="text-lg font-bold text-text-primary mb-4">Signal Status</h3>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-text-secondary">Status</span>
-                  <span className="px-3 py-1 rounded-full text-sm font-bold bg-success/20 text-success">
-                    Active
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    signal.status === 'active' ? 'bg-success/20 text-success' :
+                    signal.status === 'triggered' ? 'bg-blue-500/20 text-blue-400' :
+                    signal.status === 'target_hit' ? 'bg-green-500/20 text-green-400' :
+                    signal.status === 'stop_loss_hit' ? 'bg-red-500/20 text-red-400' :
+                    'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {signal.status?.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className="text-text-secondary">Created</span>
                   <span className="text-text-primary font-mono text-sm">
-                    {new Date(signal.created_at).toLocaleString()}
+                    {new Date(signal.generated_at).toLocaleString()}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-text-secondary">Valid Until</span>
-                  <span className="text-text-primary font-mono text-sm">
-                    {new Date(signal.valid_until).toLocaleString()}
-                  </span>
+                  <span className="text-text-secondary">Confidence</span>
+                  <span className="text-text-primary font-bold">{signal.confidence}%</span>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary">Position Size</span>
-                  <span className="text-text-primary font-bold">{signal.position_size} shares</span>
-                </div>
+                {signal.market_regime && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-text-secondary">Market Regime</span>
+                    <span className="text-text-primary font-medium">{signal.market_regime}</span>
+                  </div>
+                )}
               </div>
-            </div>
+            </motion.div>
 
             {/* Risk Management */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h3 className="text-lg font-bold text-text-primary mb-4">Risk Management</h3>
 
               <div className="space-y-3">
@@ -379,39 +681,101 @@ export default function SignalDetailPage() {
 
                 <div className="flex items-center gap-2 text-success">
                   <Target className="w-4 h-4" />
-                  <span className="text-sm">Target at ₹{signal.target.toFixed(2)}</span>
+                  <span className="text-sm">Target at ₹{signal.target_1.toFixed(2)}</span>
                 </div>
+
+                {signal.target_2 && (
+                  <div className="flex items-center gap-2 text-success/70">
+                    <Target className="w-4 h-4" />
+                    <span className="text-sm">Target 2 at ₹{signal.target_2.toFixed(2)}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 text-text-secondary">
                   <BarChart3 className="w-4 h-4" />
-                  <span className="text-sm">Max Risk: ₹{((signal.entry_price - signal.stop_loss) * signal.position_size).toFixed(2)}</span>
+                  <span className="text-sm">
+                    Max Risk: ₹{((signal.entry_price - signal.stop_loss) * 100).toFixed(2)} (per 100)
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2 text-text-secondary">
                   <TrendingUp className="w-4 h-4" />
-                  <span className="text-sm">Potential Profit: ₹{((signal.target - signal.entry_price) * signal.position_size).toFixed(2)}</span>
+                  <span className="text-sm">
+                    Potential: ₹{((signal.target_1 - signal.entry_price) * 100).toFixed(2)} (per 100)
+                  </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Actions */}
-            <div className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6">
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
+            >
               <h3 className="text-lg font-bold text-text-primary mb-4">Quick Actions</h3>
 
               <div className="space-y-3">
-                <button className="w-full px-4 py-3 bg-gradient-primary text-white rounded-xl font-medium hover:shadow-glow-md transition-all">
-                  Execute Trade
-                </button>
+                {signal.status === 'active' && canExecute && (
+                  <>
+                    {needsApproval ? (
+                      <>
+                        <button 
+                          onClick={handleApprove}
+                          disabled={approving}
+                          className="w-full px-4 py-3 bg-success/20 border border-success/30 text-success rounded-xl font-medium hover:bg-success/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsUp className="w-4 h-4" />}
+                          Approve Signal
+                        </button>
+                        <button 
+                          onClick={handleReject}
+                          disabled={rejecting}
+                          className="w-full px-4 py-3 bg-danger/20 border border-danger/30 text-danger rounded-xl font-medium hover:bg-danger/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {rejecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ThumbsDown className="w-4 h-4" />}
+                          Reject Signal
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        onClick={handleExecute}
+                        disabled={executing}
+                        className="w-full px-4 py-3 bg-gradient-primary text-white rounded-xl font-medium hover:shadow-glow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {executing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                        Execute Trade
+                      </button>
+                    )}
+                  </>
+                )}
 
-                <button className="w-full px-4 py-3 bg-background-elevated border border-gray-800 text-text-primary rounded-xl font-medium hover:border-gray-700 transition-all">
+                <button 
+                  onClick={handleAddToWatchlist}
+                  className="w-full px-4 py-3 bg-background-elevated border border-gray-800 text-text-primary rounded-xl font-medium hover:border-gray-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <BookmarkPlus className="w-4 h-4" />
                   Add to Watchlist
                 </button>
 
-                <button className="w-full px-4 py-3 bg-background-elevated border border-gray-800 text-text-primary rounded-xl font-medium hover:border-gray-700 transition-all">
+                <button className="w-full px-4 py-3 bg-background-elevated border border-gray-800 text-text-primary rounded-xl font-medium hover:border-gray-700 transition-all flex items-center justify-center gap-2">
+                  <Bell className="w-4 h-4" />
                   Set Price Alert
                 </button>
               </div>
-            </div>
+              
+              {!profile?.broker_connected && (
+                <div className="mt-4 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                  <p className="text-xs text-warning">
+                    Connect your broker in Settings to execute trades automatically.
+                  </p>
+                  <Link href="/settings" className="text-xs text-primary hover:underline mt-1 inline-block">
+                    Go to Settings →
+                  </Link>
+                </div>
+              )}
+            </motion.div>
           </div>
         </div>
       </div>
