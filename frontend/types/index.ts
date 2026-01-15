@@ -152,21 +152,26 @@ export interface TechnicalAnalysis {
 export interface Position {
   id: string
   user_id: string
-  signal_id: string
+  signal_id?: string
   symbol: string
   exchange: 'NSE' | 'BSE'
   segment: 'EQUITY' | 'FUTURES' | 'OPTIONS'
   direction: 'LONG' | 'SHORT'
   quantity: number
+  lots?: number
   entry_price: number
-  current_price: number
+  average_price?: number  // Alias for entry_price
+  current_price?: number
   stop_loss: number
   target: number
   unrealized_pnl: number
-  unrealized_pnl_percentage: number
-  status: 'open' | 'closed'
+  unrealized_pnl_percentage?: number
+  unrealized_pnl_percent?: number  // Alias
+  margin_used?: number
+  is_active?: boolean
+  status?: 'open' | 'closed'
   opened_at: string
-  updated_at: string
+  updated_at?: string
 }
 
 export interface Trade {
