@@ -79,8 +79,9 @@ aioredis==2.0.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.0
-cryptography==41.0.7
+cryptography>=41.0.7
 pyjwt==2.8.0
+pyotp>=2.9.0  # For TOTP in Angel One broker auth
 
 # ============================================================================
 # HTTP CLIENTS
