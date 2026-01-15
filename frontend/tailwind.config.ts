@@ -1,0 +1,1 @@
+/app/src/frontend/tailwind.config.ts
