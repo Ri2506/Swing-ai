@@ -446,22 +446,29 @@ class SchedulerService:
     # ========================================================================
     
     async def _is_trading_day(self) -> bool:
-        """Check if today is a trading day"""
-        today = date.today()
-        
-        # Weekend
-        if today.weekday() >= 5:
-            return False
-        
-        # Check holidays (fetch from NSE calendar)
-        holidays = [
-            # Add NSE holidays here
-            date(2025, 1, 26),  # Republic Day
-            date(2025, 3, 14),  # Holi
-            # ... etc
-        ]
-        
-        return today not in holidays
+        """Check if today is a trading day using MarketDataProvider"""
+        try:
+            from .market_data import get_market_data_provider
+            provider = get_market_data_provider()
+            return provider.is_trading_day()
+        except Exception as e:
+            logger.warning(f"Market data provider not available, using fallback: {e}")
+            # Fallback to basic check
+            today = date.today()
+            
+            # Weekend
+            if today.weekday() >= 5:
+                return False
+            
+            # Check holidays (fetch from NSE calendar)
+            holidays = [
+                # Add NSE holidays here
+                date(2025, 1, 26),  # Republic Day
+                date(2025, 3, 14),  # Holi
+                # ... etc
+            ]
+            
+            return today not in holidays
     
     def _is_market_hours(self) -> bool:
         """Check if within market hours"""
