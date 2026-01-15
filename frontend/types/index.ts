@@ -120,24 +120,28 @@ export interface ModelPredictions {
 }
 
 export interface TechnicalAnalysis {
-  rsi: number
-  macd: {
-    macd: number
-    signal: number
-    histogram: number
+  rsi?: number
+  macd?: {
+    macd?: number
+    value?: number  // Alias
+    signal?: number
+    histogram?: number
   }
-  moving_averages: {
-    sma_20: number
-    sma_50: number
-    sma_200: number
-    ema_20: number
+  moving_averages?: {
+    sma_20?: number
+    sma_50?: number
+    sma_200?: number
+    ema_20?: number
   }
-  volume_analysis: {
-    volume: number
-    avg_volume_20d: number
-    volume_ratio: number
+  volume_analysis?: {
+    volume?: number
+    avg_volume_20d?: number
+    volume_ratio?: number
   }
-  support_resistance: {
+  volume_ratio?: number  // Alias at top level
+  support_levels?: number[]
+  resistance_levels?: number[]
+  support_resistance?: {
     support_levels: number[]
     resistance_levels: number[]
   }
