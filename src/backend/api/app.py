@@ -1432,6 +1432,143 @@ except Exception as e:
         pass
 
 # ============================================================================
+# BROKER ROUTES
+# ============================================================================
+
+try:
+    from .broker_routes import router as broker_router
+    app.include_router(broker_router, prefix="/api")
+    logger.info("✅ Broker OAuth routes registered")
+except Exception as e:
+    logger.warning(f"Broker routes not available: {e}")
+
+# ============================================================================
+# PAYMENT ROUTES (Razorpay)
+# ============================================================================
+
+try:
+    from .payment_routes import router as payment_router
+    app.include_router(payment_router, prefix="/api")
+    logger.info("✅ Payment routes registered")
+except Exception as e:
+    logger.warning(f"Payment routes not available: {e}")
+
+# ============================================================================
+# MARKET DATA ROUTES
+# ============================================================================
+
+@app.get("/api/market/status", tags=["Market"])
+async def get_market_status():
+    """Get current market status (open/closed, trading day check)"""
+    try:
+        from ..services.market_data import get_market_data_provider
+        provider = get_market_data_provider()
+        status = provider.get_market_status()
+        return {
+            "is_trading_day": status.is_trading_day,
+            "is_market_open": status.is_market_open,
+            "market_phase": status.market_phase,
+            "next_open": status.next_open.isoformat() if status.next_open else None,
+            "reason": status.reason
+        }
+    except Exception as e:
+        logger.error(f"Market status error: {e}")
+        return {
+            "is_trading_day": True,
+            "is_market_open": False,
+            "market_phase": "UNKNOWN",
+            "reason": str(e)
+        }
+
+@app.get("/api/market/quote/{symbol}", tags=["Market"])
+async def get_market_quote(symbol: str):
+    """Get real-time quote for a symbol using yfinance"""
+    try:
+        from ..services.market_data import get_market_data_provider
+        provider = get_market_data_provider()
+        quote = provider.get_quote(symbol)
+        
+        if not quote:
+            raise HTTPException(status_code=404, detail="Quote not found")
+        
+        return {
+            "symbol": quote.symbol,
+            "ltp": quote.ltp,
+            "open": quote.open,
+            "high": quote.high,
+            "low": quote.low,
+            "close": quote.close,
+            "volume": quote.volume,
+            "change": quote.change,
+            "change_percent": quote.change_percent,
+            "timestamp": quote.timestamp.isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Quote error for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market/indices", tags=["Market"])
+async def get_market_indices():
+    """Get index data (Nifty, Bank Nifty, VIX)"""
+    try:
+        from ..services.market_data import get_market_data_provider
+        provider = get_market_data_provider()
+        overview = provider.get_market_overview()
+        return overview
+    except Exception as e:
+        logger.error(f"Indices error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/market/ohlc/{symbol}", tags=["Market"])
+async def get_market_ohlc(
+    symbol: str,
+    interval: str = Query("1d", description="Data interval: 1d, 1h, 1wk"),
+    days: int = Query(30, description="Number of days of data")
+):
+    """Get historical OHLCV data for a symbol"""
+    try:
+        from ..services.market_data import get_market_data_provider
+        provider = get_market_data_provider()
+        
+        # Map days to period
+        if days <= 5:
+            period = "5d"
+        elif days <= 30:
+            period = "1mo"
+        elif days <= 90:
+            period = "3mo"
+        elif days <= 180:
+            period = "6mo"
+        else:
+            period = "1y"
+        
+        df = provider.get_historical(symbol, period=period, interval=interval)
+        
+        if df is None or df.empty:
+            raise HTTPException(status_code=404, detail="Data not found")
+        
+        # Convert to list of dicts
+        data = []
+        for idx, row in df.iterrows():
+            data.append({
+                "timestamp": idx.isoformat() if hasattr(idx, 'isoformat') else str(idx),
+                "open": float(row.get('open', 0)),
+                "high": float(row.get('high', 0)),
+                "low": float(row.get('low', 0)),
+                "close": float(row.get('close', 0)),
+                "volume": int(row.get('volume', 0))
+            })
+        
+        return {"symbol": symbol, "interval": interval, "data": data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OHLC error for {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 
