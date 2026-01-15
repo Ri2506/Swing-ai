@@ -557,15 +557,26 @@ class SchedulerService:
         }
     
     async def _get_current_price(self, symbol: str) -> Optional[float]:
-        """Get current price for symbol"""
-        # In production, fetch from broker
-        import random
-        return random.uniform(100, 5000)
+        """Get current price for symbol using MarketDataProvider"""
+        try:
+            from .market_data import get_market_data_provider
+            provider = get_market_data_provider()
+            quote = provider.get_quote(symbol)
+            return quote.ltp if quote else None
+        except Exception as e:
+            logger.warning(f"Price fetch failed for {symbol}: {e}")
+            return None
     
     async def _fetch_batch_prices(self, symbols: List[str]) -> Dict[str, float]:
-        """Fetch prices for multiple symbols"""
-        import random
-        return {s: random.uniform(100, 5000) for s in symbols}
+        """Fetch prices for multiple symbols using MarketDataProvider"""
+        try:
+            from .market_data import get_market_data_provider
+            provider = get_market_data_provider()
+            quotes = provider.get_quotes_batch(symbols)
+            return {s: q.ltp for s, q in quotes.items() if q}
+        except Exception as e:
+            logger.warning(f"Batch price fetch failed: {e}")
+            return {}
     
     def _calculate_pnl(self, position: Dict, current_price: float) -> float:
         """Calculate P&L for position"""
