@@ -68,16 +68,27 @@ export interface Signal {
   entry_price: number
   stop_loss: number
   target: number
+  target_1?: number  // Alias for target
+  target_2?: number
   confidence: number // 0-100
-  risk_reward_ratio: number
-  position_size: number
-  model_predictions: ModelPredictions
-  technical_analysis: TechnicalAnalysis
+  risk_reward_ratio?: number
+  risk_reward?: number  // Alias
+  position_size?: number
+  model_predictions?: ModelPredictions
+  technical_analysis?: TechnicalAnalysis
   status: SignalStatus
-  created_at: string
-  valid_until: string
+  date?: string
+  created_at?: string
+  generated_at?: string
+  valid_until?: string
   executed_at?: string
   exit_at?: string
+  is_premium?: boolean
+  catboost_score?: number
+  tft_score?: number
+  stockformer_score?: number
+  model_agreement?: number
+  reasons?: string[]
 }
 
 export type SignalStatus =
