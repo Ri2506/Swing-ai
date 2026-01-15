@@ -89,6 +89,11 @@ export interface Signal {
   stockformer_score?: number
   model_agreement?: number
   reasons?: string[]
+  // Options specific fields
+  strike_price?: number
+  option_type?: string
+  expiry_date?: string
+  lot_size?: number
 }
 
 export type SignalStatus =
