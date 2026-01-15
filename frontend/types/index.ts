@@ -94,10 +94,13 @@ export interface Signal {
 export type SignalStatus =
   | 'active'
   | 'executed'
+  | 'triggered'
   | 'target_hit'
+  | 'sl_hit'
   | 'stop_loss_hit'
   | 'expired'
   | 'cancelled'
+  | 'closed'
 
 export interface ModelPredictions {
   catboost: {
