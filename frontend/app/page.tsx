@@ -1233,7 +1233,7 @@ export default function LandingPage() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary),0.15),transparent_70%)]" />
               <div className="relative z-10">
                 <h2 className="mb-6 text-4xl font-bold md:text-5xl">
-                  <span className="gradient-text-aurora">Deploy Institutional</span>{' '}
+                  <span className="gradient-text-elegant">Deploy Institutional</span>{' '}
                   <span className="text-text-primary">Intelligence Today</span>
                 </h2>
                 <p className="mx-auto mb-10 max-w-2xl text-lg text-text-secondary">
