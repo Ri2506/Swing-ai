@@ -8,7 +8,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, motion, useInView } from 'framer-motion'
-import { useTheme } from 'next-themes'
 import PricingSection from '@/components/ui/pricing-section-4'
 import { EtherealShadow } from '@/components/ui/etheral-shadow'
 import {
