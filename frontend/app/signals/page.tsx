@@ -1,551 +1,300 @@
-// ============================================================================
-// SWINGAI - AI SIGNAL DESK
-// AI market intelligence with one-click execution
-// ============================================================================
-
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '../../contexts/AuthContext'
-import { api, handleApiError, Signal } from '../../lib/api'
 import {
-  ArrowLeft,
+  Target,
   TrendingUp,
   TrendingDown,
-  Target,
-  Zap,
-  RefreshCw,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  Activity,
+  Filter,
   Clock,
-  ChevronRight,
-  Lock,
-  Crown,
-  Rocket,
-  Eye,
-  Play,
+  AlertCircle,
 } from 'lucide-react'
 
-// ============================================================================
-// SIGNALS PAGE
-// ============================================================================
+interface Signal {
+  id: string
+  symbol: string
+  name: string
+  direction: 'LONG' | 'SHORT'
+  entry_price: number
+  target_price: number
+  stop_loss: number
+  confidence: number
+  risk_reward: number
+  generated_at: string
+  status: 'active' | 'triggered' | 'expired'
+}
 
 export default function SignalsPage() {
-  const router = useRouter()
-  const { user, profile, loading: authLoading } = useAuth()
-  
-  // State
   const [signals, setSignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(true)
-  const [executing, setExecuting] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'long' | 'short'>('all')
-  const [segmentFilter, setSegmentFilter] = useState<'all' | 'equity' | 'fo'>('all')
+  const [filter, setFilter] = useState<'all' | 'active' | 'triggered'>('all')
 
-  // Check premium
-  const isPremium = profile?.subscription_status === 'active' || profile?.subscription_status === 'trial'
-  const canAutoTrade = profile?.trading_mode !== 'signal_only' && profile?.broker_connected
+  useEffect(() => {
+    fetchSignals()
+  }, [])
 
-  // Fetch signals
-  const fetchSignals = useCallback(async () => {
-    if (!user) return
-    
-    setLoading(true)
+  const fetchSignals = async () => {
     try {
-      const result = await api.signals.getToday()
-      setSignals(result.all_signals || [])
-    } catch (err) {
-      console.error('Failed to fetch signals:', err)
-      // Use mock data for demo
-      setSignals([
+      // Mock signals data
+      const mockSignals: Signal[] = [
         {
           id: '1',
           symbol: 'RELIANCE',
-          exchange: 'NSE',
-          segment: 'EQUITY',
+          name: 'Reliance Industries Ltd',
           direction: 'LONG',
-          entry_price: 2456.75,
-          stop_loss: 2388.00,
-          target_1: 2525.00,
-          target_2: 2594.00,
-          confidence: 85,
-          risk_reward: 2.5,
+          entry_price: 2847.50,
+          target_price: 3020.00,
+          stop_loss: 2780.00,
+          confidence: 89,
+          risk_reward: 2.57,
+          generated_at: new Date(Date.now() - 2 * 60000).toISOString(),
           status: 'active',
-          is_premium: false,
-          reasons: ['VCP breakout', 'RSI rising', 'Volume surge'],
-          date: new Date().toISOString().split('T')[0],
-          generated_at: new Date().toISOString(),
         },
         {
           id: '2',
           symbol: 'TCS',
-          exchange: 'NSE',
-          segment: 'EQUITY',
+          name: 'Tata Consultancy Services',
           direction: 'LONG',
           entry_price: 3678.90,
+          target_price: 3850.00,
           stop_loss: 3580.00,
-          target_1: 3800.00,
-          target_2: 3920.00,
-          confidence: 78,
-          risk_reward: 2.2,
+          confidence: 82,
+          risk_reward: 1.73,
+          generated_at: new Date(Date.now() - 45 * 60000).toISOString(),
           status: 'active',
-          is_premium: false,
-          reasons: ['Above 200 SMA', 'MACD bullish', 'Sector strength'],
-          date: new Date().toISOString().split('T')[0],
-          generated_at: new Date().toISOString(),
         },
         {
           id: '3',
           symbol: 'HDFCBANK',
-          exchange: 'NSE',
-          segment: 'EQUITY',
+          name: 'HDFC Bank Ltd',
           direction: 'SHORT',
-          entry_price: 1567.80,
-          stop_loss: 1610.00,
-          target_1: 1500.00,
-          target_2: 1450.00,
-          confidence: 72,
-          risk_reward: 1.8,
-          status: 'active',
-          is_premium: true,
-          reasons: ['Resistance rejection', 'RSI overbought', 'Weak sector'],
-          date: new Date().toISOString().split('T')[0],
-          generated_at: new Date().toISOString(),
+          entry_price: 1678.00,
+          target_price: 1580.00,
+          stop_loss: 1720.00,
+          confidence: 75,
+          risk_reward: 2.33,
+          generated_at: new Date(Date.now() - 2 * 3600000).toISOString(),
+          status: 'triggered',
         },
         {
           id: '4',
-          symbol: 'NIFTY',
-          exchange: 'NSE',
-          segment: 'OPTIONS',
+          symbol: 'INFY',
+          name: 'Infosys Ltd',
           direction: 'LONG',
-          entry_price: 250.00,
-          stop_loss: 200.00,
-          target_1: 350.00,
-          target_2: 450.00,
-          confidence: 75,
-          risk_reward: 2.0,
+          entry_price: 1523.45,
+          target_price: 1620.00,
+          stop_loss: 1480.00,
+          confidence: 78,
+          risk_reward: 2.22,
+          generated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
           status: 'active',
-          is_premium: true,
-          reasons: ['Bullish trend', 'Support bounce', 'PCR favorable'],
-          date: new Date().toISOString().split('T')[0],
-          generated_at: new Date().toISOString(),
-          lot_size: 25,
-          strike_price: 21500,
-          option_type: 'CE',
-          expiry_date: '2025-01-09',
         },
-      ] as Signal[])
+        {
+          id: '5',
+          symbol: 'BHARTIARTL',
+          name: 'Bharti Airtel Ltd',
+          direction: 'LONG',
+          entry_price: 1547.00,
+          target_price: 1680.00,
+          stop_loss: 1490.00,
+          confidence: 84,
+          risk_reward: 2.33,
+          generated_at: new Date(Date.now() - 6 * 3600000).toISOString(),
+          status: 'expired',
+        },
+      ]
+      setSignals(mockSignals)
+    } catch (error) {
+      console.error('Error fetching signals:', error)
     } finally {
       setLoading(false)
     }
-  }, [user])
-
-  useEffect(() => {
-    fetchSignals()
-  }, [fetchSignals])
-
-  // Execute trade
-  const executeTrade = async (signal: Signal) => {
-    if (!isPremium && signal.is_premium) {
-      router.push('/pricing')
-      return
-    }
-
-    if (!canAutoTrade) {
-      router.push('/settings')
-      return
-    }
-
-    setExecuting(signal.id)
-    try {
-      await api.trades.execute({ signal_id: signal.id })
-      alert(`Trade executed for ${signal.symbol}!`)
-    } catch (err) {
-      alert(handleApiError(err))
-    } finally {
-      setExecuting(null)
-    }
   }
 
-  // Filter signals
-  const filteredSignals = signals.filter(s => {
-    if (filter === 'long' && s.direction !== 'LONG') return false
-    if (filter === 'short' && s.direction !== 'SHORT') return false
-    if (segmentFilter === 'equity' && s.segment !== 'EQUITY') return false
-    if (segmentFilter === 'fo' && s.segment === 'EQUITY') return false
-    return true
+  const filteredSignals = signals.filter(signal => {
+    if (filter === 'all') return true
+    return signal.status === filter
   })
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
+  const getTimeAgo = (dateString: string) => {
+    const diff = Date.now() - new Date(dateString).getTime()
+    const minutes = Math.floor(diff / 60000)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
+  }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background-primary">
         <div className="text-center">
-          <Target className="w-12 h-12 text-emerald-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">AI is scanning markets...</p>
+          <Activity className="mx-auto h-12 w-12 animate-pulse text-accent" />
+          <p className="mt-4 text-lg text-text-secondary">Loading AI signals...</p>
         </div>
       </div>
     )
   }
 
-  if (!user) return null
-
-  const longSignals = signals.filter(s => s.direction === 'LONG')
-  const shortSignals = signals.filter(s => s.direction === 'SHORT')
-  const avgConfidence = signals.length > 0 
-    ? (signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length).toFixed(0)
-    : 0
-
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-background-primary px-6 py-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-white/5 rounded-xl transition-colors">
-                <ArrowLeft className="w-5 h-5 text-gray-400" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Target className="w-6 h-6 text-emerald-500" />
-                  AI Signal Desk
-                </h1>
-                <p className="text-sm text-gray-500">Generated at 8:30 AM • Updated every market day</p>
-              </div>
+            <div>
+              <h1 className="mb-2 text-4xl font-bold text-text-primary">
+                <span className="gradient-text-professional">AI Trading Signals</span>
+              </h1>
+              <p className="text-lg text-text-secondary">
+                Real-time swing trade signals powered by artificial intelligence
+              </p>
             </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={fetchSignals}
-                className="p-2 hover:bg-white/5 rounded-xl transition-colors"
-              >
-                <RefreshCw className={`w-5 h-5 text-gray-400 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-              {!canAutoTrade && (
-                <Link
-                  href="/settings"
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 rounded-xl font-medium hover:bg-emerald-500/30 transition-all"
-                >
-                  <Zap className="w-4 h-4" />
-                  Enable Auto-Trade
-                </Link>
-              )}
-            </div>
+            <Link
+              href="/dashboard"
+              className="rounded-lg border border-border/60 bg-background-surface px-4 py-2 text-sm font-medium text-text-primary transition hover:border-accent/60"
+            >
+              ← Back to Dashboard
+            </Link>
           </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-500/20">
-                <Target className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">{signals.length}</p>
-                <p className="text-sm text-gray-500">Total Signals</p>
-              </div>
-            </div>
+        {/* Stats Overview */}
+        <div className="mb-8 grid gap-4 md:grid-cols-4">
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-5">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Active Signals</div>
+            <div className="text-3xl font-bold text-primary">{signals.filter(s => s.status === 'active').length}</div>
           </div>
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-green-500/20">
-                <TrendingUp className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-400">{longSignals.length}</p>
-                <p className="text-sm text-gray-500">Long Signals</p>
-              </div>
-            </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-5">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Avg Confidence</div>
+            <div className="text-3xl font-bold text-accent">{Math.round(signals.reduce((a, b) => a + b.confidence, 0) / signals.length)}%</div>
           </div>
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-red-500/20">
-                <TrendingDown className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-red-400">{shortSignals.length}</p>
-                <p className="text-sm text-gray-500">Short Signals</p>
-              </div>
-            </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-5">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Triggered Today</div>
+            <div className="text-3xl font-bold text-success">{signals.filter(s => s.status === 'triggered').length}</div>
           </div>
-          <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-blue-500/20">
-                <Brain className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-400">{avgConfidence}%</p>
-                <p className="text-sm text-gray-500">Avg Confidence</p>
-              </div>
-            </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-5">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Avg Risk:Reward</div>
+            <div className="text-3xl font-bold text-text-primary">{(signals.reduce((a, b) => a + b.risk_reward, 0) / signals.length).toFixed(2)}:1</div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center bg-white/5 rounded-xl p-1">
-            {(['all', 'long', 'short'] as const).map((f) => (
+        <div className="mb-6 flex items-center gap-3">
+          <Filter className="h-5 w-5 text-text-secondary" />
+          <div className="flex gap-2">
+            {(['all', 'active', 'triggered'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                   filter === f
-                    ? f === 'long' ? 'bg-green-500 text-white' : f === 'short' ? 'bg-red-500 text-white' : 'bg-white/10 text-white'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-accent/15 text-accent'
+                    : 'bg-background-surface text-text-secondary hover:bg-background-elevated'
                 }`}
               >
-                {f === 'all' ? 'All' : f === 'long' ? '↑ Long' : '↓ Short'}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center bg-white/5 rounded-xl p-1">
-            {(['all', 'equity', 'fo'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setSegmentFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  segmentFilter === f ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                {f === 'all' ? 'All' : f === 'equity' ? 'Equity' : 'F&O'}
+                {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Signals Grid */}
+        {/* Signals List */}
         <div className="space-y-4">
-          <AnimatePresence>
-            {filteredSignals.map((signal, index) => {
-              const target1 = signal.target_1 ?? signal.target
-              const target2 = signal.target_2
-              const riskReward = signal.risk_reward ?? signal.risk_reward_ratio
-              const reasons = signal.reasons || []
-              const optionLabel =
-                signal.segment !== 'EQUITY' &&
-                typeof signal.strike_price === 'number' &&
-                signal.option_type &&
-                signal.expiry_date
-                  ? `${signal.strike_price} ${signal.option_type} • ${signal.expiry_date}`
-                  : null
-
-              return (
-                <motion.div
-                  key={signal.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`relative overflow-hidden rounded-2xl border ${
-                    signal.direction === 'LONG'
-                      ? 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent'
-                      : 'border-red-500/20 bg-gradient-to-r from-red-500/5 to-transparent'
-                  }`}
-                >
-                {/* Premium badge */}
-                {signal.is_premium && !isPremium && (
-                  <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
-                    <Crown className="w-3 h-3" />
-                    PRO
-                  </div>
-                )}
-
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    {/* Stock info */}
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                        signal.direction === 'LONG' ? 'bg-green-500/20' : 'bg-red-500/20'
-                      }`}>
-                        {signal.direction === 'LONG' 
-                          ? <TrendingUp className="w-7 h-7 text-green-400" />
-                          : <TrendingDown className="w-7 h-7 text-red-400" />
-                        }
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold text-white">{signal.symbol}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                            signal.direction === 'LONG' 
-                              ? 'bg-green-500/20 text-green-400' 
-                              : 'bg-red-500/20 text-red-400'
-                          }`}>
-                            {signal.direction}
-                          </span>
-                          <span className="px-2 py-0.5 text-xs font-medium bg-white/10 text-gray-300 rounded-full">
-                            {signal.segment}
-                          </span>
-                        </div>
-                        {optionLabel && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            {optionLabel}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Confidence */}
-                    <div className="text-right">
-                      <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold text-white">{signal.confidence}%</span>
-                      </div>
-                      <p className="text-sm text-gray-500">AI Confidence</p>
-                    </div>
-                  </div>
-
-                  {/* Price levels */}
-                  <div className="grid grid-cols-4 gap-4 mb-4">
-                    <div className="bg-white/[0.03] rounded-xl p-3">
-                      <p className="text-xs text-gray-500 mb-1">Entry</p>
-                      <p className="text-lg font-semibold text-white">₹{signal.entry_price.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-red-500/10 rounded-xl p-3">
-                      <p className="text-xs text-red-400 mb-1">Stop Loss</p>
-                      <p className="text-lg font-semibold text-red-400">₹{signal.stop_loss.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-green-500/10 rounded-xl p-3">
-                      <p className="text-xs text-green-400 mb-1">Target 1</p>
-                      <p className="text-lg font-semibold text-green-400">
-                        {typeof target1 === 'number' ? `₹${target1.toLocaleString()}` : '—'}
-                      </p>
-                    </div>
-                    <div className="bg-green-500/10 rounded-xl p-3">
-                      <p className="text-xs text-green-400 mb-1">Target 2</p>
-                      <p className="text-lg font-semibold text-green-400">
-                        {typeof target2 === 'number' ? `₹${target2.toLocaleString()}` : '—'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Reasons */}
-                  <div className="flex items-center gap-2 mb-4">
-                    {reasons.length > 0 ? (
-                      reasons.map((reason, i) => (
-                        <span key={i} className="px-3 py-1 bg-white/5 text-gray-300 text-sm rounded-full">
-                          {reason}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="px-3 py-1 bg-white/5 text-gray-300 text-sm rounded-full">
-                        Rationale available in details
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <Clock className="w-4 h-4" />
-                      <span>
-                        Risk:Reward {typeof riskReward === 'number' ? riskReward.toFixed(1) : '—'}:1
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-white/5 text-gray-300 rounded-xl hover:bg-white/10 transition-colors">
-                        <Eye className="w-4 h-4" />
-                        View Chart
-                      </button>
-                      
-                      {signal.is_premium && !isPremium ? (
-                        <Link
-                          href="/pricing"
-                          className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-amber-500/25 transition-all"
-                        >
-                          <Lock className="w-4 h-4" />
-                          Unlock with Pro
-                        </Link>
+          {filteredSignals.map((signal, index) => (
+            <motion.div
+              key={signal.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated transition hover:border-accent/40"
+            >
+              <div className="border-b border-border/30 bg-background-surface/50 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                      signal.direction === 'LONG' ? 'bg-success/15' : 'bg-danger/15'
+                    }`}>
+                      {signal.direction === 'LONG' ? (
+                        <TrendingUp className="h-5 w-5 text-success" />
                       ) : (
-                        <button
-                          onClick={() => executeTrade(signal)}
-                          disabled={executing === signal.id}
-                          className={`flex items-center gap-2 px-6 py-2.5 font-medium rounded-xl transition-all ${
-                            signal.direction === 'LONG'
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-green-500/25'
-                              : 'bg-gradient-to-r from-red-500 to-rose-500 text-white hover:shadow-lg hover:shadow-red-500/25'
-                          } disabled:opacity-50`}
-                        >
-                          {executing === signal.id ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                          ) : canAutoTrade ? (
-                            <Rocket className="w-4 h-4" />
-                          ) : (
-                            <Play className="w-4 h-4" />
-                          )}
-                          {executing === signal.id 
-                            ? 'Executing...' 
-                            : canAutoTrade 
-                              ? 'Auto Execute' 
-                              : 'Execute Trade'
-                          }
-                        </button>
+                        <TrendingDown className="h-5 w-5 text-danger" />
                       )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-text-primary">{signal.symbol}</span>
+                        <span className={`rounded px-2 py-0.5 text-xs font-bold ${
+                          signal.direction === 'LONG' ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
+                        }`}>
+                          {signal.direction}
+                        </span>
+                        <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+                          signal.status === 'active' ? 'bg-accent/15 text-accent' :
+                          signal.status === 'triggered' ? 'bg-success/15 text-success' :
+                          'bg-text-secondary/15 text-text-secondary'
+                        }`}>
+                          {signal.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-sm text-text-secondary">{signal.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-sm text-text-secondary">
+                      <Clock className="h-4 w-4" />
+                      {getTimeAgo(signal.generated_at)}
+                    </div>
+                    <div className="flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1">
+                      <Sparkles className="h-4 w-4 text-accent" />
+                      <span className="text-sm font-bold text-accent">{signal.confidence}%</span>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-              )
-            })}
-          </AnimatePresence>
+              </div>
+
+              <div className="grid gap-4 p-6 md:grid-cols-4">
+                <div>
+                  <div className="mb-1 text-xs font-medium text-text-secondary">Entry Price</div>
+                  <div className="rounded-lg bg-accent/10 px-4 py-3 text-center">
+                    <div className="text-lg font-bold text-accent">₹{signal.entry_price.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-medium text-text-secondary">Target</div>
+                  <div className="rounded-lg bg-success/10 px-4 py-3 text-center">
+                    <div className="text-lg font-bold text-success">₹{signal.target_price.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-medium text-text-secondary">Stop Loss</div>
+                  <div className="rounded-lg bg-danger/10 px-4 py-3 text-center">
+                    <div className="text-lg font-bold text-danger">₹{signal.stop_loss.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-medium text-text-secondary">Risk:Reward</div>
+                  <div className="rounded-lg bg-primary/10 px-4 py-3 text-center">
+                    <div className="text-lg font-bold text-primary">{signal.risk_reward.toFixed(2)}:1</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Empty state */}
-        {filteredSignals.length === 0 && !loading && (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
-              <Target className="w-10 h-10 text-gray-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">No signals found</h3>
-            <p className="text-gray-500 mb-6">Signals are generated at 8:30 AM on trading days</p>
-            <button
-              onClick={fetchSignals}
-              className="px-6 py-3 bg-emerald-500/20 text-emerald-400 rounded-xl font-medium hover:bg-emerald-500/30 transition-colors"
-            >
-              Refresh Signals
-            </button>
+        {filteredSignals.length === 0 && (
+          <div className="rounded-xl border border-border/60 bg-background-surface p-12 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-text-secondary" />
+            <p className="mt-4 text-lg text-text-secondary">No signals found for the selected filter</p>
           </div>
         )}
-
-        {/* Bot Status */}
-        <div className="mt-8 p-6 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/20 rounded-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-500/20">
-                <Zap className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  {canAutoTrade ? 'Auto-Trading Enabled' : 'Enable Auto-Trading'}
-                </h3>
-                <p className="text-sm text-gray-400">
-                  {canAutoTrade 
-                    ? 'AI will automatically execute high-confidence signals'
-                    : 'Connect your broker to enable AI-assisted execution'
-                  }
-                </p>
-              </div>
-            </div>
-            {!canAutoTrade && (
-              <Link
-                href="/settings"
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white font-medium rounded-xl hover:bg-emerald-600 transition-colors"
-              >
-                Setup Auto-Trade
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )
