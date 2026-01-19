@@ -543,8 +543,6 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 }
 
 export default function LandingPage() {
-  const { resolvedTheme, setTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
   const [mounted, setMounted] = useState(false)
 
   const stats = [
