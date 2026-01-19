@@ -824,7 +824,7 @@ export default function LandingPage() {
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-xl"
             >
               <Terminal className="h-4 w-4" />
-              Institutional Trading Intelligence
+              AI-Powered Neural Trading Platform
             </motion.div>
 
             <motion.h1
