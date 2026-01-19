@@ -202,3 +202,332 @@ html {
   transform: translateY(-4px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
 }
+
+/* ============================================================
+   2026 CUTTING-EDGE GRADIENT TEXT ANIMATIONS
+   Used by top companies like Apple, Stripe, Linear, Vercel
+   ============================================================ */
+
+/* Animated Multi-Color Gradient Text */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-y {
+  0%, 100% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 50% 100%;
+  }
+}
+
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes gradient-rotate {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-glow-gradient {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.5),
+                 0 0 40px rgba(0, 255, 136, 0.3),
+                 0 0 60px rgba(147, 51, 234, 0.2);
+  }
+  50% {
+    opacity: 0.9;
+    text-shadow: 0 0 30px rgba(0, 229, 255, 0.8),
+                 0 0 60px rgba(0, 255, 136, 0.5),
+                 0 0 90px rgba(147, 51, 234, 0.4);
+  }
+}
+
+/* Primary Gradient Text - Cyan to Green */
+.gradient-text-primary {
+  background: linear-gradient(135deg, 
+    rgb(0, 229, 255) 0%, 
+    rgb(0, 255, 136) 50%, 
+    rgb(0, 229, 255) 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Rainbow Gradient - Full Spectrum */
+.gradient-text-rainbow {
+  background: linear-gradient(90deg, 
+    #ff0080 0%,
+    #ff8c00 20%,
+    #40e0d0 40%,
+    #7b68ee 60%,
+    #00ced1 80%,
+    #ff1493 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-x 3s ease infinite;
+}
+
+/* Holographic Gradient - Premium Effect */
+.gradient-text-holographic {
+  background: linear-gradient(45deg,
+    #00e5ff 0%,
+    #a855f7 15%,
+    #00ff88 30%,
+    #00e5ff 45%,
+    #fbbf24 60%,
+    #f97316 75%,
+    #00e5ff 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-xy 5s ease infinite;
+}
+
+/* Neon Glow Gradient */
+.gradient-text-neon {
+  background: linear-gradient(135deg,
+    #00e5ff 0%,
+    #00ff88 25%,
+    #a855f7 50%,
+    #00ff88 75%,
+    #00e5ff 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite, pulse-glow-gradient 2s ease-in-out infinite;
+}
+
+/* Shimmer Effect - Loading/Premium */
+.gradient-text-shimmer {
+  background: linear-gradient(90deg,
+    rgba(0, 229, 255, 0.4) 0%,
+    rgba(0, 255, 136, 1) 50%,
+    rgba(0, 229, 255, 0.4) 100%
+  );
+  background-size: 1000px 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Sunset Gradient */
+.gradient-text-sunset {
+  background: linear-gradient(135deg,
+    #ff6b6b 0%,
+    #feca57 30%,
+    #ee5a6f 60%,
+    #ff9ff3 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Ocean Gradient */
+.gradient-text-ocean {
+  background: linear-gradient(135deg,
+    #667eea 0%,
+    #764ba2 25%,
+    #00d2ff 50%,
+    #3a7bd5 75%,
+    #667eea 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 5s ease infinite;
+}
+
+/* Cosmic Gradient */
+.gradient-text-cosmic {
+  background: linear-gradient(135deg,
+    #667eea 0%,
+    #764ba2 20%,
+    #f093fb 40%,
+    #4facfe 60%,
+    #00f2fe 80%,
+    #667eea 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-xy 6s ease infinite;
+}
+
+/* Electric Gradient - AI/Tech Focused */
+.gradient-text-electric {
+  background: linear-gradient(90deg,
+    #00e5ff 0%,
+    #00ff88 25%,
+    #a855f7 50%,
+    #00ff88 75%,
+    #00e5ff 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-x 3s linear infinite;
+}
+
+/* Aurora Gradient - Premium Brand */
+.gradient-text-aurora {
+  background: linear-gradient(135deg,
+    #00c9ff 0%,
+    #92fe9d 25%,
+    #00c9ff 50%,
+    #92fe9d 75%,
+    #00c9ff 100%
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-xy 8s ease infinite;
+}
+
+/* Plasma Gradient - High Energy */
+.gradient-text-plasma {
+  background: linear-gradient(45deg,
+    #f72585 0%,
+    #7209b7 20%,
+    #3a0ca3 40%,
+    #4361ee 60%,
+    #4cc9f0 80%,
+    #f72585 100%
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-xy 7s ease infinite;
+}
+
+/* Chrome Gradient - Metallic */
+.gradient-text-chrome {
+  background: linear-gradient(90deg,
+    #c0c0c0 0%,
+    #ffffff 25%,
+    #c0c0c0 50%,
+    #ffffff 75%,
+    #c0c0c0 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-x 2s linear infinite;
+}
+
+/* Utility Classes for Easy Application */
+.text-gradient-animate {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+}
+
+/* Hover Effects */
+.gradient-text-hover {
+  transition: all 0.3s ease;
+}
+
+.gradient-text-hover:hover {
+  filter: brightness(1.2) saturate(1.2);
+  transform: scale(1.02);
+}
+
+/* Responsive Text Gradient */
+@media (max-width: 768px) {
+  .gradient-text-primary,
+  .gradient-text-rainbow,
+  .gradient-text-holographic,
+  .gradient-text-neon,
+  .gradient-text-electric {
+    animation-duration: 4s;
+  }
+}
+
+/* Performance Optimization */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-text-primary,
+  .gradient-text-rainbow,
+  .gradient-text-holographic,
+  .gradient-text-neon,
+  .gradient-text-shimmer,
+  .gradient-text-sunset,
+  .gradient-text-ocean,
+  .gradient-text-cosmic,
+  .gradient-text-electric,
+  .gradient-text-aurora,
+  .gradient-text-plasma,
+  .gradient-text-chrome {
+    animation: none;
+    background-position: 50% 50%;
+  }
+}
+
+/* Text Stroke for Better Visibility */
+.text-stroke {
+  -webkit-text-stroke: 1px rgba(0, 229, 255, 0.3);
+}
