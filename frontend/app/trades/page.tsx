@@ -1,377 +1,259 @@
-// ============================================================================
-// SWINGAI - TRADES PAGE
-// Trade history with filters, P&L tracking, and analytics
-// ============================================================================
-
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '../../contexts/AuthContext'
-import { api, handleApiError, Trade } from '../../lib/api'
+import Link from 'next/link'
 import {
-  ArrowLeft,
+  History,
   TrendingUp,
   TrendingDown,
-  Filter,
-  Download,
+  ArrowUp,
+  ArrowDown,
+  Activity,
   Calendar,
-  Search,
-  RefreshCw,
-  ChevronDown,
-  X,
-  CheckCircle,
-  XCircle,
-  Clock,
-  AlertCircle,
+  Filter,
 } from 'lucide-react'
 
-// ============================================================================
-// TRADES PAGE
-// ============================================================================
+interface Trade {
+  id: string
+  symbol: string
+  direction: 'LONG' | 'SHORT'
+  entry_price: number
+  exit_price: number
+  quantity: number
+  pnl: number
+  pnl_percent: number
+  entry_date: string
+  exit_date: string
+  status: 'win' | 'loss'
+}
 
 export default function TradesPage() {
-  const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
-  
-  // Data states
   const [trades, setTrades] = useState<Trade[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  
-  // Filter states
-  const [statusFilter, setStatusFilter] = useState<string>('')
-  const [segmentFilter, setSegmentFilter] = useState<string>('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-
-  // Fetch trades
-  const fetchTrades = useCallback(async () => {
-    if (!user) return
-    
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const filters: any = { limit: 100 }
-      if (statusFilter) filters.status = statusFilter
-      if (segmentFilter) filters.segment = segmentFilter
-      
-      const result = await api.trades.getAll(filters)
-      setTrades(result.trades || [])
-    } catch (err) {
-      setError(handleApiError(err))
-    } finally {
-      setLoading(false)
-    }
-  }, [user, statusFilter, segmentFilter])
+  const [filter, setFilter] = useState<'all' | 'win' | 'loss'>('all')
 
   useEffect(() => {
-    fetchTrades()
-  }, [fetchTrades])
+    // Mock trades data
+    const mockTrades: Trade[] = [
+      {
+        id: '1',
+        symbol: 'RELIANCE',
+        direction: 'LONG',
+        entry_price: 2720.00,
+        exit_price: 2847.50,
+        quantity: 50,
+        pnl: 6375.00,
+        pnl_percent: 4.69,
+        entry_date: '2024-12-10',
+        exit_date: '2024-12-15',
+        status: 'win',
+      },
+      {
+        id: '2',
+        symbol: 'TCS',
+        direction: 'SHORT',
+        entry_price: 3720.00,
+        exit_price: 3678.90,
+        quantity: 30,
+        pnl: 1233.00,
+        pnl_percent: 1.10,
+        entry_date: '2024-12-08',
+        exit_date: '2024-12-12',
+        status: 'win',
+      },
+      {
+        id: '3',
+        symbol: 'INFY',
+        direction: 'LONG',
+        entry_price: 1580.00,
+        exit_price: 1523.45,
+        quantity: 100,
+        pnl: -5655.00,
+        pnl_percent: -3.58,
+        entry_date: '2024-12-05',
+        exit_date: '2024-12-11',
+        status: 'loss',
+      },
+      {
+        id: '4',
+        symbol: 'HDFCBANK',
+        direction: 'LONG',
+        entry_price: 1620.00,
+        exit_price: 1678.00,
+        quantity: 75,
+        pnl: 4350.00,
+        pnl_percent: 3.58,
+        entry_date: '2024-12-01',
+        exit_date: '2024-12-09',
+        status: 'win',
+      },
+      {
+        id: '5',
+        symbol: 'ICICIBANK',
+        direction: 'SHORT',
+        entry_price: 1050.00,
+        exit_price: 1089.75,
+        quantity: 100,
+        pnl: -3975.00,
+        pnl_percent: -3.79,
+        entry_date: '2024-11-28',
+        exit_date: '2024-12-05',
+        status: 'loss',
+      },
+    ]
+    setTrades(mockTrades)
+    setLoading(false)
+  }, [])
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login')
-    }
-  }, [user, authLoading, router])
+  const filteredTrades = trades.filter(trade => {
+    if (filter === 'all') return true
+    return trade.status === filter
+  })
 
-  if (authLoading) {
+  const totalPnL = trades.reduce((sum, t) => sum + t.pnl, 0)
+  const winningTrades = trades.filter(t => t.status === 'win').length
+  const winRate = (winningTrades / trades.length) * 100
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background-primary flex items-center justify-center">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background-primary">
+        <Activity className="h-12 w-12 animate-pulse text-accent" />
       </div>
     )
   }
 
-  if (!user) return null
-
-  // Filter trades by search
-  const filteredTrades = trades.filter(trade => 
-    trade.symbol.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  // Calculate stats
-  const closedTrades = trades.filter(t => t.status === 'closed')
-  const winners = closedTrades.filter(t => (t.net_pnl || 0) > 0)
-  const losers = closedTrades.filter(t => (t.net_pnl || 0) < 0)
-  const totalPnl = closedTrades.reduce((sum, t) => sum + (t.net_pnl || 0), 0)
-  const winRate = closedTrades.length > 0 ? (winners.length / closedTrades.length * 100) : 0
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <Clock className="w-4 h-4 text-blue-400" />
-      case 'closed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />
-      case 'cancelled':
-        return <XCircle className="w-4 h-4 text-red-400" />
-      case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-400" />
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-400" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-      case 'closed':
-        return 'bg-green-500/10 text-green-400 border-green-500/30'
-      case 'cancelled':
-        return 'bg-red-500/10 text-red-400 border-red-500/30'
-      case 'pending':
-        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
-      default:
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/30'
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-background-primary">
-      {/* Header */}
-      <header className="bg-background-surface border-b border-gray-800 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-background-primary px-6 py-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="p-2 hover:bg-background-elevated rounded-lg transition-colors">
-                <ArrowLeft className="w-5 h-5 text-text-secondary" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-text-primary">Trade History</h1>
-                <p className="text-sm text-text-muted">View and analyze your trades</p>
-              </div>
+            <div>
+              <h1 className="mb-2 text-4xl font-bold text-text-primary">
+                <span className="gradient-text-professional">Trade History</span>
+              </h1>
+              <p className="text-lg text-text-secondary">
+                Complete record of your executed trades
+              </p>
             </div>
-            
-            <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-lg border border-border/60 bg-background-surface px-4 py-2 text-sm font-medium text-text-primary transition hover:border-accent/60"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
+        </div>
+
+        {/* Summary Stats */}
+        <div className="mb-8 grid gap-4 md:grid-cols-4">
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-6">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-text-secondary">
+              <History className="h-4 w-4" />
+              Total Trades
+            </div>
+            <div className="text-3xl font-bold text-text-primary">{trades.length}</div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-6">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-text-secondary">
+              <TrendingUp className="h-4 w-4" />
+              Total P&L
+            </div>
+            <div className={`text-3xl font-bold ${totalPnL >= 0 ? 'text-success' : 'text-danger'}`}>
+              {totalPnL >= 0 ? '+' : ''}₹{totalPnL.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-6">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Win Rate</div>
+            <div className="text-3xl font-bold text-accent">{winRate.toFixed(1)}%</div>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated p-6">
+            <div className="mb-2 text-sm font-medium text-text-secondary">Wins/Losses</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-success">{winningTrades}</span>
+              <span className="text-text-secondary">/</span>
+              <span className="text-3xl font-bold text-danger">{trades.length - winningTrades}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="mb-6 flex items-center gap-3">
+          <Filter className="h-5 w-5 text-text-secondary" />
+          <div className="flex gap-2">
+            {(['all', 'win', 'loss'] as const).map((f) => (
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${
-                  showFilters ? 'bg-primary/10 border-primary text-primary' : 'border-gray-700 text-text-secondary hover:border-gray-600'
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  filter === f
+                    ? 'bg-accent/15 text-accent'
+                    : 'bg-background-surface text-text-secondary hover:bg-background-elevated'
                 }`}
               >
-                <Filter className="w-4 h-4" />
-                Filters
+                {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
-              <button
-                onClick={fetchTrades}
-                className="p-2 hover:bg-background-elevated rounded-lg transition-colors"
-              >
-                <RefreshCw className={`w-5 h-5 text-text-secondary ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+            ))}
           </div>
         </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-background-surface rounded-xl border border-gray-800 p-4">
-            <p className="text-sm text-text-muted mb-1">Total Trades</p>
-            <p className="text-2xl font-bold text-text-primary">{trades.length}</p>
-          </div>
-          <div className="bg-background-surface rounded-xl border border-gray-800 p-4">
-            <p className="text-sm text-text-muted mb-1">Win Rate</p>
-            <p className={`text-2xl font-bold ${winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-              {winRate.toFixed(1)}%
-            </p>
-          </div>
-          <div className="bg-background-surface rounded-xl border border-gray-800 p-4">
-            <p className="text-sm text-text-muted mb-1">Winners</p>
-            <p className="text-2xl font-bold text-green-400">{winners.length}</p>
-          </div>
-          <div className="bg-background-surface rounded-xl border border-gray-800 p-4">
-            <p className="text-sm text-text-muted mb-1">Total P&L</p>
-            <p className={`text-2xl font-bold ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              ₹{totalPnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-            </p>
-          </div>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="bg-background-surface rounded-xl border border-gray-800 p-4 mb-6"
-          >
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search by symbol..."
-                    className="w-full pl-10 pr-4 py-2 bg-background-elevated border border-gray-700 rounded-lg text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-              
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 bg-background-elevated border border-gray-700 rounded-lg text-text-primary focus:outline-none focus:border-primary"
-              >
-                <option value="">All Status</option>
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
-                <option value="pending">Pending</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              
-              <select
-                value={segmentFilter}
-                onChange={(e) => setSegmentFilter(e.target.value)}
-                className="px-4 py-2 bg-background-elevated border border-gray-700 rounded-lg text-text-primary focus:outline-none focus:border-primary"
-              >
-                <option value="">All Segments</option>
-                <option value="EQUITY">Equity</option>
-                <option value="FUTURES">Futures</option>
-                <option value="OPTIONS">Options</option>
-              </select>
-
-              {(statusFilter || segmentFilter || searchQuery) && (
-                <button
-                  onClick={() => {
-                    setStatusFilter('')
-                    setSegmentFilter('')
-                    setSearchQuery('')
-                  }}
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                  Clear
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400" />
-            <p className="text-red-400">{error}</p>
-          </div>
-        )}
 
         {/* Trades Table */}
-        <div className="bg-background-surface rounded-xl border border-gray-800 overflow-hidden">
-          {loading ? (
-            <div className="p-12 text-center">
-              <RefreshCw className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
-              <p className="text-text-muted">Loading trades...</p>
-            </div>
-          ) : filteredTrades.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-background-elevated rounded-full flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-text-muted" />
-              </div>
-              <p className="text-text-secondary mb-2">No trades found</p>
-              <p className="text-sm text-text-muted">Your trade history will appear here</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-background-elevated">
-                  <tr>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-text-muted">Symbol</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-text-muted">Direction</th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-text-muted">Segment</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-text-muted">Qty</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-text-muted">Entry</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-text-muted">Exit</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-text-muted">P&L</th>
-                    <th className="text-center px-6 py-4 text-sm font-medium text-text-muted">Status</th>
-                    <th className="text-right px-6 py-4 text-sm font-medium text-text-muted">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {filteredTrades.map((trade) => (
-                    <motion.tr
-                      key={trade.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="hover:bg-background-elevated/50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-text-primary">{trade.symbol}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`flex items-center gap-1 ${trade.direction === 'LONG' ? 'text-green-400' : 'text-red-400'}`}>
-                          {trade.direction === 'LONG' ? (
-                            <TrendingUp className="w-4 h-4" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4" />
-                          )}
-                          <span className="text-sm font-medium">{trade.direction}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-text-secondary">{trade.segment}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-text-primary">{trade.quantity}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-text-primary">₹{trade.entry_price.toFixed(2)}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {trade.exit_price ? (
-                          <span className="text-text-primary">₹{trade.exit_price.toFixed(2)}</span>
-                        ) : (
-                          <span className="text-text-muted">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {trade.net_pnl !== undefined && trade.net_pnl !== null ? (
-                          <div>
-                            <span className={`font-medium ${trade.net_pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {trade.net_pnl >= 0 ? '+' : ''}₹{trade.net_pnl.toFixed(0)}
-                            </span>
-                            {trade.pnl_percent !== undefined && (
-                              <p className={`text-xs ${trade.pnl_percent >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
-                                {trade.pnl_percent >= 0 ? '+' : ''}{trade.pnl_percent.toFixed(2)}%
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-text-muted">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(trade.status)}`}>
-                            {getStatusIcon(trade.status)}
-                            {trade.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm text-text-muted">
-                          {new Date(trade.created_at).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: '2-digit',
-                          })}
-                        </span>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br from-background-surface to-background-elevated">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-border/40 bg-background-elevated/50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-text-secondary">Symbol</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-text-secondary">Direction</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-text-secondary">Entry</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-text-secondary">Exit</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-text-secondary">Qty</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-text-secondary">P&L</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-text-secondary">Dates</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {filteredTrades.map((trade, index) => (
+                  <motion.tr
+                    key={trade.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="transition-colors hover:bg-background-elevated/30"
+                  >
+                    <td className="px-6 py-4 font-semibold text-text-primary">{trade.symbol}</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold ${
+                        trade.direction === 'LONG' ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
+                      }`}>
+                        {trade.direction === 'LONG' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        {trade.direction}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right text-text-secondary">₹{trade.entry_price.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-right text-text-primary">₹{trade.exit_price.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-right text-text-secondary">{trade.quantity}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className={`font-bold ${trade.pnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {trade.pnl >= 0 ? '+' : ''}₹{trade.pnl.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                      </div>
+                      <div className={`flex items-center justify-end gap-1 text-xs ${trade.pnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {trade.pnl >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                        {Math.abs(trade.pnl_percent).toFixed(2)}%
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1 text-sm text-text-secondary">
+                        <Calendar className="h-4 w-4" />
+                        {trade.entry_date} → {trade.exit_date}
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
