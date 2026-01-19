@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Sparkles as SparklesComp } from "@/components/ui/sparkles";
 import { TimelineContent } from "@/components/ui/timeline-animation";
 import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/ui/index";
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 
