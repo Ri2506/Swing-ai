@@ -35,6 +35,14 @@ async def health_check():
         "message": "SwingAI API is running. Configure Supabase credentials to enable full functionality."
     }
 
+# Import market data router
+try:
+    from market_data import router as market_router
+    app.include_router(market_router)
+    print("✅ Market data endpoints loaded")
+except Exception as e:
+    print(f"⚠️ Market data endpoints not loaded: {e}")
+
 # Import and include the actual routes when Supabase is configured
 try:
     from src.backend.api.app import app as full_app
