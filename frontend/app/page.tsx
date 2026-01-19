@@ -942,7 +942,7 @@ export default function LandingPage() {
                 className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 backdrop-blur-xl"
               >
                 <Terminal className="h-4 w-4 text-accent" />
-                <span className="text-xs font-semibold uppercase tracking-wider gradient-text-shimmer">
+                <span className="text-xs font-semibold uppercase tracking-wider gradient-text-shimmer-pro">
                   Live Trading Terminal
                 </span>
               </motion.div>
