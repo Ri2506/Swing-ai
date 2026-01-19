@@ -947,7 +947,7 @@ export default function LandingPage() {
                 </span>
               </motion.div>
               <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold md:text-5xl">
-                <span className="gradient-text-plasma">Institutional-Grade</span>{' '}
+                <span className="gradient-text-professional">Institutional-Grade</span>{' '}
                 <span className="text-text-primary">Execution Platform</span>
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
