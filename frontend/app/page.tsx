@@ -4,7 +4,7 @@
 
 'use client'
 
-import { useEffect, useRef, useState, type TouchEvent } from 'react'
+import React, { useEffect, useRef, useState, type TouchEvent } from 'react'
 import Link from 'next/link'
 import { AnimatePresence, motion, useInView, useScroll, useTransform } from 'framer-motion'
 import { useTheme } from 'next-themes'
