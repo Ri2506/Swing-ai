@@ -211,8 +211,7 @@ export default function PricingSection6() {
           customVariants={revealVariants}
           className="text-text-secondary"
         >
-          Trusted by 2,400+ traders in India. Choose monthly flexibility or save
-          with annual billing.
+          Join 2,400+ serious traders. Save 17% with annual commitment.
         </TimelineContent>
 
         <TimelineContent
