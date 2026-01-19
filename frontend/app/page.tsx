@@ -796,14 +796,6 @@ export default function LandingPage() {
               >
                 Login
               </Link>
-              <button
-                type="button"
-                onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/40 bg-background-surface/50 text-text-secondary backdrop-blur-sm transition hover:border-accent/40 hover:text-accent"
-                aria-label="Toggle theme"
-              >
-                {mounted ? (isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />) : null}
-              </button>
               <Link
                 href="/signup"
                 className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_0_30px_rgba(var(--primary),0.4)] transition hover:bg-primary/90 hover:shadow-[0_0_40px_rgba(var(--primary),0.5)]"
