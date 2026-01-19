@@ -833,10 +833,10 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="mb-6 text-5xl font-bold leading-tight text-text-primary md:text-7xl"
             >
-              Systematic Pre-Breakout
+              AI-Powered Neural
               <br />
               <span className="bg-gradient-to-r from-accent via-primary to-accent bg-clip-text text-transparent">
-                Detection Engine
+                Market Intelligence
               </span>
             </motion.h1>
 
