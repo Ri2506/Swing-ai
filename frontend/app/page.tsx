@@ -939,10 +939,12 @@ export default function LandingPage() {
             >
               <motion.div
                 variants={fadeInUp}
-                className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-xl"
+                className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 backdrop-blur-xl"
               >
-                <Terminal className="h-4 w-4" />
-                Live Trading Terminal
+                <Terminal className="h-4 w-4 text-accent" />
+                <span className="text-xs font-semibold uppercase tracking-wider gradient-text-shimmer">
+                  Live Trading Terminal
+                </span>
               </motion.div>
               <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold text-text-primary md:text-5xl">
                 Institutional-Grade Execution Platform
