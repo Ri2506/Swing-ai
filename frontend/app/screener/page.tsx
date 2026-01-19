@@ -15,7 +15,7 @@ import {
   RefreshCw, Zap, Target, BarChart3, Activity, Flame, Clock, Star,
   ChevronRight, ChevronDown, ChevronUp, X, Play, Pause, Settings,
   Volume2, Eye, AlertTriangle, CheckCircle2, Info, Bookmark, Share2,
-  Download, Grid3X3, List, ArrowLeft, Bell, Moon, Sun, Menu, ExternalLink,
+  Download, Grid3X3, List, ArrowLeft, Bell, Sun, Menu, ExternalLink,
   Sparkles, Radio, Wifi, WifiOff, Database, Cpu, Globe2, Shield,
   LineChart, CandlestickChart, Layers, Box, Triangle, Circle, Square,
   Hexagon, Crosshair, ArrowRightLeft, DollarSign, Percent, Hash, Lock,
