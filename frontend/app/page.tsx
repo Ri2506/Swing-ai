@@ -1067,8 +1067,9 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="mb-16 text-center"
             >
-              <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold text-text-primary md:text-5xl">
-                Auditable Performance Metrics
+              <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold md:text-5xl">
+                <span className="gradient-text-neon">Auditable Performance</span>{' '}
+                <span className="text-text-primary">Metrics</span>
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
                 180-day backtested and 90-day live-tracked performance data with institutional-grade verification
