@@ -632,40 +632,52 @@ export default function LandingPage() {
 
   const performanceRows = [
     {
-      metric: 'Annualized Win Rate',
-      ours: { value: 78.4, suffix: '%', decimals: 1 },
+      metric: 'Total Signals Generated',
+      ours: { value: 2847, suffix: '', decimals: 0 },
       buyHold: 'N/A',
-      manual: '~59%',
+      manual: 'N/A',
+    },
+    {
+      metric: 'Win Rate (180 days)',
+      ours: { value: 68.4, suffix: '%', decimals: 1 },
+      buyHold: 'N/A',
+      manual: '52.3%',
+    },
+    {
+      metric: 'Average Profit per Trade',
+      ours: { value: 3.8, suffix: '%', decimals: 1 },
+      buyHold: 'N/A',
+      manual: '2.1%',
     },
     {
       metric: 'Average Risk:Reward',
-      ours: { value: 5.2, suffix: ':1', decimals: 1 },
+      ours: { value: 2.8, suffix: ':1', decimals: 1 },
       buyHold: 'N/A',
-      manual: '2.4:1',
+      manual: '1.6:1',
     },
     {
       metric: 'Maximum Drawdown',
-      ours: { value: -5.8, suffix: '%', decimals: 1 },
-      buyHold: '-22.3%',
-      manual: '-19.4%',
+      ours: { value: -8.2, suffix: '%', decimals: 1 },
+      buyHold: '-18.7%',
+      manual: '-14.3%',
     },
     {
       metric: 'Sharpe Ratio',
-      ours: { value: 3.24, suffix: '', decimals: 2 },
-      buyHold: '0.48',
-      manual: '1.31',
+      ours: { value: 1.87, suffix: '', decimals: 2 },
+      buyHold: '0.62',
+      manual: '0.94',
     },
     {
       metric: 'Average Hold Period',
-      ours: { value: 4.8, suffix: ' days', decimals: 1 },
+      ours: { value: 5.2, suffix: ' days', decimals: 1 },
       buyHold: 'N/A',
-      manual: '7.6 days',
+      manual: '8.6 days',
     },
     {
       metric: 'Profit Factor',
-      ours: { value: 2.87, suffix: '', decimals: 2 },
+      ours: { value: 1.92, suffix: '', decimals: 2 },
       buyHold: 'N/A',
-      manual: '1.62',
+      manual: '1.28',
     },
   ]
 
