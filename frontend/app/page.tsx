@@ -1054,7 +1054,7 @@ export default function LandingPage() {
             >
               <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold md:text-5xl">
                 <span className="text-text-primary">Trusted by</span>{' '}
-                <span className="gradient-text-sunset">Systematic Traders</span>
+                <span className="gradient-text-professional">Systematic Traders</span>
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
                 Real performance outcomes from professional and semi-professional market participants
