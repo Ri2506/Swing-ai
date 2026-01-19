@@ -91,7 +91,7 @@ const plans = [
     description: 'For serious traders',
     features: [
       'Unlimited signals',
-      'AI model insights',
+      'AI market insights',
       'All alert channels',
       'Unlimited history',
       'Advanced analytics',
@@ -125,6 +125,7 @@ const plans = [
 export default function SignupPage() {
   const router = useRouter()
   const { signUp, signInWithGoogle } = useAuth()
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
@@ -163,7 +164,7 @@ export default function SignupPage() {
     try {
       await signUp(formData.email, formData.password, formData.full_name)
       toast.success('Account created! Please check your email to verify.')
-      router.push('/verify-email')
+      router.push(demoMode ? '/dashboard' : '/verify-email')
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account')
     } finally {
@@ -266,7 +267,7 @@ export default function SignupPage() {
                     Create Your Account
                   </h1>
                   <p className="text-text-secondary">
-                    Join 5000+ traders using AI-powered signals
+                    Join 5,000+ traders using AI-powered signals
                   </p>
                 </div>
 
@@ -549,7 +550,7 @@ export default function SignupPage() {
                   You're All Set!
                 </h1>
                 <p className="text-text-secondary mb-8">
-                  Click below to create your account and start trading with AI
+                  Click below to create your account and start trading with AI market intelligence
                 </p>
 
                 <div className="bg-background-elevated rounded-xl p-6 mb-8">

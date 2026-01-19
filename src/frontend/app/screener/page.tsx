@@ -1,7 +1,7 @@
 // ============================================================================
-// AI BETA SCREENER - COMPLETE STOCK SCREENER APPLICATION
-// Full integration with all 43+ scanners, AI predictions, ML signals
-// Powered by advanced ML models and real-time market data
+// AI MARKET SCREENER - COMPLETE STOCK SCREENER APPLICATION
+// Full integration with 43+ scanners and AI market intelligence
+// Designed for NSE/BSE swing workflows
 // ============================================================================
 
 'use client'
@@ -19,14 +19,14 @@ import {
   Sparkles, Radio, Wifi, WifiOff, Database, Cpu, Globe2, Shield,
   LineChart, CandlestickChart, Layers, Box, Triangle, Circle, Square,
   Hexagon, Crosshair, ArrowRightLeft, DollarSign, Percent, Hash, Lock,
-  Brain, Lightbulb, TrendingUp as Trend, Binary, Gauge, PieChart
+  Gauge, PieChart
 } from 'lucide-react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 // ============================================================================
-// AI BETA SCREENER MENU - ALL 43+ SCANNERS
-// Advanced AI-powered stock screening for Indian markets
+// AI MARKET SCREENER MENU - ALL 43+ SCANNERS
+// Professional AI-powered stock screening for Indian markets
 // ============================================================================
 
 const SCANNER_CATEGORIES = [
@@ -147,12 +147,12 @@ const SCANNER_CATEGORIES = [
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/30',
     textColor: 'text-yellow-400',
-    description: 'Institutional activity indicators',
+    description: 'Smart money activity indicators',
     scanners: [
-      { id: 36, name: 'FII/DII Data', description: 'Institutional buying/selling', premium: true },
+      { id: 36, name: 'FII/DII Data', description: 'Smart money buying/selling', premium: true },
       { id: 37, name: 'Delivery Volume', description: 'High delivery %', premium: true },
       { id: 38, name: 'Bulk Deals', description: 'Large block trades', premium: true },
-      { id: 39, name: 'Block Deals', description: 'Institutional blocks', premium: true },
+      { id: 39, name: 'Block Deals', description: 'Large block activity', premium: true },
       { id: 35, name: 'Supply/Demand Zone', description: 'Key S/D zones', premium: true },
     ]
   },
@@ -169,32 +169,32 @@ const SCANNER_CATEGORIES = [
       { id: 40, name: 'OI Analysis', description: 'Open Interest analysis', premium: true },
       { id: 41, name: 'Long Buildup', description: 'F&O long buildup', premium: true },
       { id: 42, name: 'Short Buildup', description: 'F&O short buildup', premium: true },
-      { id: 36, name: 'FII/DII F&O', description: 'Institutional F&O data', premium: true },
+      { id: 36, name: 'FII/DII F&O', description: 'Smart money F&O data', premium: true },
     ]
   },
 ]
 
-// AI/ML Features
+// AI Intelligence Features
 const AI_FEATURES = [
   {
     id: 'nifty_prediction',
-    name: 'Nifty AI Prediction',
-    icon: Brain,
-    description: 'LSTM + XGBoost ensemble prediction',
+    name: 'AI Nifty Outlook',
+    icon: LineChart,
+    description: 'Directional bias with confidence score',
     endpoint: '/api/screener/ai/nifty-prediction',
   },
   {
     id: 'ml_signals',
-    name: 'ML Trading Signals',
-    icon: Binary,
-    description: 'Pattern recognition & momentum',
+    name: 'AI Momentum Radar',
+    icon: Zap,
+    description: 'Highest-quality trend continuations',
     endpoint: '/api/screener/ai/ml-signals',
   },
   {
     id: 'trend_forecast',
-    name: 'Trend Forecasting',
-    icon: Trend,
-    description: 'Multi-timeframe analysis',
+    name: 'AI Regime Map',
+    icon: Layers,
+    description: 'Multi-timeframe alignment snapshot',
     endpoint: '/api/screener/ai/trend-forecast/NIFTY',
   },
 ]
@@ -318,8 +318,8 @@ function NiftyPredictionPanel({ data }: { data: any }) {
   return (
     <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl p-6">
       <div className="flex items-center gap-3 mb-4">
-        <Brain className="w-6 h-6 text-purple-400" />
-        <h3 className="text-lg font-bold text-white">AI Nifty Prediction</h3>
+        <LineChart className="w-6 h-6 text-purple-400" />
+        <h3 className="text-lg font-bold text-white">AI Nifty Outlook</h3>
       </div>
       
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -470,8 +470,8 @@ export default function ScreenerPage() {
                   <Search className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold">AI Beta Screener</h1>
-                  <p className="text-xs text-gray-500">43+ Scanners • AI/ML Powered</p>
+                  <h1 className="text-xl font-bold">AI Market Screener</h1>
+                  <p className="text-xs text-gray-500">43+ Scanners • AI market intelligence filters</p>
                 </div>
               </div>
             </div>
@@ -520,9 +520,9 @@ export default function ScreenerPage() {
                 <span className="font-semibold text-white">1800+ stocks</span>
               </div>
               <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-purple-500" />
-                <span className="text-gray-400">AI Models:</span>
-                <span className="font-semibold text-white">3 (LSTM, XGBoost, RF)</span>
+                <Shield className="w-4 h-4 text-purple-500" />
+                <span className="text-gray-400">AI Intelligence:</span>
+                <span className="font-semibold text-white">Real-time AI filters</span>
               </div>
             </div>
             
@@ -543,7 +543,7 @@ export default function ScreenerPage() {
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
-                AI/ML
+                AI Intelligence
               </button>
             </div>
           </div>
@@ -571,7 +571,7 @@ export default function ScreenerPage() {
                       </div>
                       <div>
                         <div className="font-bold">AI Swing Candidates</div>
-                        <div className="text-xs text-white/70">Best picks by AI</div>
+                        <div className="text-xs text-white/70">AI-ranked high-conviction setups</div>
                       </div>
                     </div>
                   </motion.button>
@@ -612,7 +612,7 @@ export default function ScreenerPage() {
                 </>
               ) : (
                 <>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-1">AI/ML Features</h3>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase px-1">AI Intelligence Tools</h3>
                   {AI_FEATURES.map(feature => (
                     <AIFeatureCard
                       key={feature.id}
@@ -623,12 +623,12 @@ export default function ScreenerPage() {
                   ))}
                   
                   <div className="p-4 bg-purple-900/20 border border-purple-500/30 rounded-xl">
-                    <div className="text-sm text-purple-300 mb-2">Powered by:</div>
+                    <div className="text-sm text-purple-300 mb-2">AI guardrails:</div>
                     <div className="space-y-1 text-xs text-gray-400">
-                      <div>• LSTM Neural Networks</div>
-                      <div>• XGBoost Ensemble</div>
-                      <div>• Random Forest</div>
-                      <div>• Pattern Recognition</div>
+                      <div>- Risk-first filters</div>
+                      <div>- Liquidity-aware screening</div>
+                      <div>- Regime-aware alignment</div>
+                      <div>- Quality threshold gating</div>
                     </div>
                   </div>
                 </>
@@ -747,7 +747,7 @@ export default function ScreenerPage() {
                       <Search className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-green-500" />
                     </div>
                     <p className="mt-4 text-gray-400">Scanning 1800+ stocks...</p>
-                    <p className="text-sm text-gray-600">AI-Powered Stock Screener</p>
+                    <p className="text-sm text-gray-600">AI Stock Screener</p>
                   </div>
                 )}
                 
@@ -759,7 +759,7 @@ export default function ScreenerPage() {
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">Ready to Scan</h3>
                     <p className="text-gray-400 max-w-md mb-4">
-                      Access 43+ professional scanners including breakouts, momentum, patterns, and AI/ML predictions.
+                      Access 43+ professional scanners including breakouts, momentum, patterns, and AI signal intelligence.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       {['Breakouts', 'Momentum', 'VCP', 'Cup & Handle', 'AI Signals'].map(tag => (
@@ -790,13 +790,13 @@ export default function ScreenerPage() {
             <div className="flex items-center gap-3">
               <Search className="w-4 h-4 text-green-500" />
               <span className="text-sm text-gray-400">
-                AI Beta Screener • Full NSE/BSE Coverage • 43+ Scanners
+                AI Market Screener • Full NSE/BSE Coverage • 43+ Scanners
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <Link href="/pricing" className="hover:text-white">Upgrade to Pro</Link>
               <a href="/dashboard" className="hover:text-white flex items-center gap-1">
-                GitHub <ExternalLink className="w-3 h-3" />
+                Dashboard <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>

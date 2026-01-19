@@ -1,6 +1,6 @@
 // ============================================================================
-// SWINGAI - AI SIGNALS PAGE
-// The core product - AI-generated trading signals with one-click execution
+// SWINGAI - AI SIGNAL DESK
+// AI market intelligence with one-click execution
 // ============================================================================
 
 'use client'
@@ -16,16 +16,10 @@ import {
   TrendingUp,
   TrendingDown,
   Target,
-  Shield,
   Zap,
   RefreshCw,
-  Filter,
   Clock,
-  CheckCircle,
-  AlertTriangle,
   ChevronRight,
-  Brain,
-  BarChart3,
   Lock,
   Crown,
   Rocket,
@@ -78,10 +72,6 @@ export default function SignalsPage() {
           risk_reward: 2.5,
           status: 'active',
           is_premium: false,
-          catboost_score: 82,
-          tft_score: 88,
-          stockformer_score: 85,
-          model_agreement: 3,
           reasons: ['VCP breakout', 'RSI rising', 'Volume surge'],
           date: new Date().toISOString().split('T')[0],
           generated_at: new Date().toISOString(),
@@ -100,10 +90,6 @@ export default function SignalsPage() {
           risk_reward: 2.2,
           status: 'active',
           is_premium: false,
-          catboost_score: 75,
-          tft_score: 80,
-          stockformer_score: 79,
-          model_agreement: 3,
           reasons: ['Above 200 SMA', 'MACD bullish', 'Sector strength'],
           date: new Date().toISOString().split('T')[0],
           generated_at: new Date().toISOString(),
@@ -122,10 +108,6 @@ export default function SignalsPage() {
           risk_reward: 1.8,
           status: 'active',
           is_premium: true,
-          catboost_score: 70,
-          tft_score: 74,
-          stockformer_score: 72,
-          model_agreement: 3,
           reasons: ['Resistance rejection', 'RSI overbought', 'Weak sector'],
           date: new Date().toISOString().split('T')[0],
           generated_at: new Date().toISOString(),
@@ -144,10 +126,6 @@ export default function SignalsPage() {
           risk_reward: 2.0,
           status: 'active',
           is_premium: true,
-          catboost_score: 73,
-          tft_score: 77,
-          stockformer_score: 75,
-          model_agreement: 3,
           reasons: ['Bullish trend', 'Support bounce', 'PCR favorable'],
           date: new Date().toISOString().split('T')[0],
           generated_at: new Date().toISOString(),
@@ -209,8 +187,8 @@ export default function SignalsPage() {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
-          <Brain className="w-12 h-12 text-emerald-500 animate-pulse mx-auto mb-4" />
-          <p className="text-gray-400">AI is analyzing markets...</p>
+          <Target className="w-12 h-12 text-emerald-500 animate-pulse mx-auto mb-4" />
+          <p className="text-gray-400">AI is scanning markets...</p>
         </div>
       </div>
     )
@@ -236,8 +214,8 @@ export default function SignalsPage() {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                  <Brain className="w-6 h-6 text-emerald-500" />
-                  AI Trading Signals
+                  <Target className="w-6 h-6 text-emerald-500" />
+                  AI Signal Desk
                 </h1>
                 <p className="text-sm text-gray-500">Generated at 8:30 AM • Updated every market day</p>
               </div>
@@ -348,19 +326,32 @@ export default function SignalsPage() {
         {/* Signals Grid */}
         <div className="space-y-4">
           <AnimatePresence>
-            {filteredSignals.map((signal, index) => (
-              <motion.div
-                key={signal.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative overflow-hidden rounded-2xl border ${
-                  signal.direction === 'LONG'
-                    ? 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent'
-                    : 'border-red-500/20 bg-gradient-to-r from-red-500/5 to-transparent'
-                }`}
-              >
+            {filteredSignals.map((signal, index) => {
+              const target1 = signal.target_1 ?? signal.target
+              const target2 = signal.target_2
+              const riskReward = signal.risk_reward ?? signal.risk_reward_ratio
+              const reasons = signal.reasons || []
+              const optionLabel =
+                signal.segment !== 'EQUITY' &&
+                typeof signal.strike_price === 'number' &&
+                signal.option_type &&
+                signal.expiry_date
+                  ? `${signal.strike_price} ${signal.option_type} • ${signal.expiry_date}`
+                  : null
+
+              return (
+                <motion.div
+                  key={signal.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`relative overflow-hidden rounded-2xl border ${
+                    signal.direction === 'LONG'
+                      ? 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent'
+                      : 'border-red-500/20 bg-gradient-to-r from-red-500/5 to-transparent'
+                  }`}
+                >
                 {/* Premium badge */}
                 {signal.is_premium && !isPremium && (
                   <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
@@ -395,9 +386,9 @@ export default function SignalsPage() {
                             {signal.segment}
                           </span>
                         </div>
-                        {signal.segment !== 'EQUITY' && (
+                        {optionLabel && (
                           <p className="text-sm text-gray-500 mt-1">
-                            {signal.strike_price} {signal.option_type} • {signal.expiry_date}
+                            {optionLabel}
                           </p>
                         )}
                       </div>
@@ -424,48 +415,40 @@ export default function SignalsPage() {
                     </div>
                     <div className="bg-green-500/10 rounded-xl p-3">
                       <p className="text-xs text-green-400 mb-1">Target 1</p>
-                      <p className="text-lg font-semibold text-green-400">₹{signal.target_1.toLocaleString()}</p>
+                      <p className="text-lg font-semibold text-green-400">
+                        {typeof target1 === 'number' ? `₹${target1.toLocaleString()}` : '—'}
+                      </p>
                     </div>
                     <div className="bg-green-500/10 rounded-xl p-3">
                       <p className="text-xs text-green-400 mb-1">Target 2</p>
-                      <p className="text-lg font-semibold text-green-400">₹{signal.target_2?.toLocaleString() || '-'}</p>
-                    </div>
-                  </div>
-
-                  {/* Model scores */}
-                  <div className="flex items-center gap-6 mb-4 p-3 bg-white/[0.02] rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                      <span className="text-sm text-gray-400">CatBoost: <span className="text-white font-medium">{signal.catboost_score}%</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-purple-500" />
-                      <span className="text-sm text-gray-400">TFT: <span className="text-white font-medium">{signal.tft_score}%</span></span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-gray-400">Stockformer: <span className="text-white font-medium">{signal.stockformer_score}%</span></span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      <span className="text-sm text-emerald-400 font-medium">{signal.model_agreement}/3 Models Agree</span>
+                      <p className="text-lg font-semibold text-green-400">
+                        {typeof target2 === 'number' ? `₹${target2.toLocaleString()}` : '—'}
+                      </p>
                     </div>
                   </div>
 
                   {/* Reasons */}
                   <div className="flex items-center gap-2 mb-4">
-                    {signal.reasons.map((reason, i) => (
-                      <span key={i} className="px-3 py-1 bg-white/5 text-gray-300 text-sm rounded-full">
-                        {reason}
+                    {reasons.length > 0 ? (
+                      reasons.map((reason, i) => (
+                        <span key={i} className="px-3 py-1 bg-white/5 text-gray-300 text-sm rounded-full">
+                          {reason}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="px-3 py-1 bg-white/5 text-gray-300 text-sm rounded-full">
+                        Rationale available in details
                       </span>
-                    ))}
+                    )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center justify-between pt-4 border-t border-white/5">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Clock className="w-4 h-4" />
-                      <span>Risk:Reward {signal.risk_reward}:1</span>
+                      <span>
+                        Risk:Reward {typeof riskReward === 'number' ? riskReward.toFixed(1) : '—'}:1
+                      </span>
                     </div>
                     
                     <div className="flex items-center gap-3">
@@ -511,7 +494,8 @@ export default function SignalsPage() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              )
+            })}
           </AnimatePresence>
         </div>
 
@@ -519,10 +503,10 @@ export default function SignalsPage() {
         {filteredSignals.length === 0 && !loading && (
           <div className="text-center py-16">
             <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
-              <Brain className="w-10 h-10 text-gray-600" />
+              <Target className="w-10 h-10 text-gray-600" />
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No signals found</h3>
-            <p className="text-gray-500 mb-6">AI signals are generated at 8:30 AM on trading days</p>
+            <p className="text-gray-500 mb-6">Signals are generated at 8:30 AM on trading days</p>
             <button
               onClick={fetchSignals}
               className="px-6 py-3 bg-emerald-500/20 text-emerald-400 rounded-xl font-medium hover:bg-emerald-500/30 transition-colors"
@@ -545,8 +529,8 @@ export default function SignalsPage() {
                 </h3>
                 <p className="text-sm text-gray-400">
                   {canAutoTrade 
-                    ? 'Bot will automatically execute high-confidence signals'
-                    : 'Connect your broker to let AI trade for you automatically'
+                    ? 'AI will automatically execute high-confidence signals'
+                    : 'Connect your broker to enable AI-assisted execution'
                   }
                 </p>
               </div>

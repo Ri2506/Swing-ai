@@ -399,7 +399,7 @@ export default function SubscriptionPage() {
             Choose Your <span className="text-blue-500">Trading Plan</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Unlock the full power of AI trading. All plans include our core features. Upgrade anytime.
+            Unlock the full power of AI market intelligence. All plans include our core engine and risk controls. Upgrade anytime.
           </p>
         </motion.div>
         

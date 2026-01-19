@@ -30,7 +30,21 @@ export default function SignalCard({
   showExecuteButton = true,
 }: SignalCardProps) {
   const isLong = signal.direction === 'LONG'
-  const riskReward = signal.risk_reward_ratio.toFixed(2)
+  const riskRewardValue =
+    typeof signal.risk_reward_ratio === 'number'
+      ? signal.risk_reward_ratio
+      : typeof signal.risk_reward === 'number'
+      ? signal.risk_reward
+      : null
+  const targetPrice = signal.target ?? signal.target_1 ?? signal.target_2 ?? null
+  const consensusRaw = signal.model_predictions?.model_agreement ?? signal.model_agreement
+  const consensus =
+    typeof consensusRaw === 'number'
+      ? consensusRaw <= 1
+        ? consensusRaw * 100
+        : (consensusRaw / 3) * 100
+      : null
+  const createdAt = signal.created_at || signal.generated_at || signal.date || null
 
   // Calculate confidence color
   const getConfidenceColor = (confidence: number) => {
@@ -144,25 +158,27 @@ export default function SignalCard({
             <p className="text-xs text-success">Target</p>
           </div>
           <p className="text-sm font-bold text-success font-mono">
-            ₹{signal.target.toLocaleString('en-IN')}
+            {typeof targetPrice === 'number' ? `₹${targetPrice.toLocaleString('en-IN')}` : '—'}
           </p>
         </div>
       </div>
 
-      {/* Risk/Reward & Model Agreement */}
+      {/* Risk/Reward & Consensus */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-800">
         <div className="flex items-center gap-4">
           {/* Risk/Reward */}
           <div>
             <p className="text-xs text-text-muted mb-1">R:R Ratio</p>
-            <p className="text-sm font-bold text-text-primary">1:{riskReward}</p>
+            <p className="text-sm font-bold text-text-primary">
+              {riskRewardValue !== null ? `1:${riskRewardValue.toFixed(2)}` : '—'}
+            </p>
           </div>
 
-          {/* Model Agreement */}
+          {/* AI Consensus */}
           <div>
-            <p className="text-xs text-text-muted mb-1">Models</p>
+            <p className="text-xs text-text-muted mb-1">AI Consensus</p>
             <p className="text-sm font-bold text-text-primary">
-              {(signal.model_predictions.model_agreement * 100).toFixed(0)}%
+              {consensus !== null ? `${Math.round(consensus)}%` : '—'}
             </p>
           </div>
 
@@ -170,7 +186,7 @@ export default function SignalCard({
           <div>
             <p className="text-xs text-text-muted mb-1">Qty</p>
             <p className="text-sm font-bold text-text-primary">
-              {signal.position_size}
+              {signal.position_size ?? '—'}
             </p>
           </div>
         </div>
@@ -179,7 +195,7 @@ export default function SignalCard({
         <div className="flex items-center gap-1 text-text-muted">
           <Clock className="w-3 h-3" />
           <span className="text-xs">
-            {new Date(signal.created_at).toLocaleDateString()}
+            {createdAt ? new Date(createdAt).toLocaleDateString() : '—'}
           </span>
         </div>
       </div>
@@ -209,48 +225,6 @@ export default function SignalCard({
             Execute
           </motion.button>
         )}
-      </div>
-
-      {/* Model Predictions Indicator */}
-      <div className="mt-3 pt-3 border-t border-gray-800">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted">CatBoost:</span>
-            <span
-              className={
-                signal.model_predictions.catboost.prediction === signal.direction
-                  ? 'text-success'
-                  : 'text-text-muted'
-              }
-            >
-              {signal.model_predictions.catboost.confidence}%
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted">TFT:</span>
-            <span
-              className={
-                signal.model_predictions.tft.prediction === signal.direction
-                  ? 'text-success'
-                  : 'text-text-muted'
-              }
-            >
-              {signal.model_predictions.tft.confidence}%
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-text-muted">Stockformer:</span>
-            <span
-              className={
-                signal.model_predictions.stockformer.prediction === signal.direction
-                  ? 'text-success'
-                  : 'text-text-muted'
-              }
-            >
-              {signal.model_predictions.stockformer.confidence}%
-            </span>
-          </div>
-        </div>
       </div>
     </motion.div>
   )

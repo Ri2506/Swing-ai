@@ -122,7 +122,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span className="font-semibold text-white">Upgrade to Pro</span>
               </div>
               <p className="text-xs text-gray-400 mb-3">
-                Unlock all scanners & auto-trading
+                Unlock AI scanners and execution tools
               </p>
               <span className="inline-block px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium rounded-lg">
                 View Plans

@@ -1,6 +1,6 @@
 // ============================================================================
 // SWINGAI - SIGNAL DETAIL PAGE
-// Detailed view of individual signal with live API data, chart, and execute/approve flows
+// Detailed view of individual signal with live data, chart, and execution workflows
 // ============================================================================
 
 'use client'
@@ -24,8 +24,6 @@ import {
   XCircle,
   AlertCircle,
   Zap,
-  Brain,
-  Activity,
   Loader2,
   RefreshCw,
   Play,
@@ -236,20 +234,25 @@ export default function SignalDetailPage() {
   const isProfitable = currentPrice > signal.entry_price
   const pnl = (currentPrice - signal.entry_price) * (signal.position_size || 100)
   const pnlPercent = ((currentPrice - signal.entry_price) / signal.entry_price) * 100
+  const target1 = signal.target_1 ?? signal.target ?? signal.entry_price
+  const riskRange = target1 - signal.stop_loss
+  const entryPercent = riskRange !== 0 ? ((signal.entry_price - signal.stop_loss) / riskRange) * 100 : 0
+  const pricePercent = riskRange !== 0 ? Math.abs((currentPrice - signal.entry_price) / riskRange) * 100 : 0
   
   // Determine user's trading mode
   const tradingMode = profile?.trading_mode || 'signal_only'
   const canExecute = tradingMode !== 'signal_only' && profile?.broker_connected
   const needsApproval = tradingMode === 'semi_auto'
 
-  // Model predictions with defaults
-  const modelPredictions = signal.model_predictions || {
-    catboost: { prediction: signal.direction, confidence: signal.catboost_score || signal.confidence },
-    tft: { prediction: signal.direction, confidence: signal.tft_score || signal.confidence },
-    stockformer: { prediction: signal.direction, confidence: signal.stockformer_score || signal.confidence },
-    ensemble_confidence: signal.confidence,
-    model_agreement: signal.model_agreement / 3 || 0.9,
-  }
+  const consensusRaw = signal.model_predictions?.model_agreement ?? signal.model_agreement
+  const consensus =
+    typeof consensusRaw === 'number'
+      ? consensusRaw <= 1
+        ? consensusRaw * 100
+        : (consensusRaw / 3) * 100
+      : null
+  const generatedAt = signal.generated_at || signal.created_at || signal.date || null
+  const validUntil = signal.valid_until || null
 
   // Technical analysis with defaults
   const technicalAnalysis = signal.technical_analysis || {
@@ -257,7 +260,7 @@ export default function SignalDetailPage() {
     macd: { value: 0, signal: 0, histogram: 0 },
     volume_ratio: 1.0,
     support_levels: [signal.stop_loss],
-    resistance_levels: [signal.target_1],
+    resistance_levels: [target1],
   }
 
   return (
@@ -370,7 +373,7 @@ export default function SignalDetailPage() {
                 <div>
                   <div className="text-text-muted text-sm mb-1">Target</div>
                   <div className="text-xl font-bold text-success font-mono">
-                    ₹{signal.target_1.toFixed(2)}
+                    ₹{target1.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -397,21 +400,21 @@ export default function SignalDetailPage() {
                   <div className="flex justify-between text-xs text-text-muted mb-1">
                     <span>SL: ₹{signal.stop_loss.toFixed(0)}</span>
                     <span>Entry: ₹{signal.entry_price.toFixed(0)}</span>
-                    <span>Target: ₹{signal.target_1.toFixed(0)}</span>
+                    <span>Target: ₹{target1.toFixed(0)}</span>
                   </div>
                   <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden relative">
                     <div 
                       className="absolute h-full bg-gray-600" 
                       style={{ 
-                        left: '0%', 
-                        width: `${((signal.entry_price - signal.stop_loss) / (signal.target_1 - signal.stop_loss)) * 100}%` 
+                        left: '0%',
+                        width: `${entryPercent}%`
                       }}
                     />
                     <div 
                       className={`absolute h-full ${isProfitable ? 'bg-success' : 'bg-danger'}`}
                       style={{ 
-                        left: `${((signal.entry_price - signal.stop_loss) / (signal.target_1 - signal.stop_loss)) * 100}%`,
-                        width: `${Math.abs(((currentPrice - signal.entry_price) / (signal.target_1 - signal.stop_loss)) * 100)}%`
+                        left: `${entryPercent}%`,
+                        width: `${pricePercent}%`
                       }}
                     />
                   </div>
@@ -419,138 +422,52 @@ export default function SignalDetailPage() {
               </div>
             </motion.div>
 
-            {/* AI Model Predictions */}
+            {/* AI Signal Summary */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="bg-background-surface/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6"
             >
-              <h2 className="text-xl font-bold text-text-primary mb-6">AI Model Predictions</h2>
+              <h2 className="text-xl font-bold text-text-primary mb-6">AI Signal Summary</h2>
 
-              <div className="space-y-4">
-                {/* CatBoost */}
+              <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-blue-500/10">
-                        <BarChart3 className="w-5 h-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-primary">CatBoost</div>
-                        <div className="text-sm text-text-muted">Gradient Boosting</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        modelPredictions.catboost.prediction === 'LONG' ? 'text-success' : 'text-danger'
-                      }`}>
-                        {modelPredictions.catboost.prediction}
-                      </div>
-                      <div className="text-sm text-text-secondary">
-                        {modelPredictions.catboost.confidence?.toFixed(0)}% confidence
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-blue-400"
-                      style={{ width: `${modelPredictions.catboost.confidence}%` }}
-                    />
+                  <div className="text-text-muted text-sm mb-1">Signal Strength</div>
+                  <div className="text-2xl font-bold text-text-primary">{signal.confidence.toFixed(0)}%</div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    {signal.confidence >= 75 ? 'High conviction' : signal.confidence >= 60 ? 'Qualified setup' : 'Monitor closely'}
                   </div>
                 </div>
-
-                {/* TFT */}
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-purple-500/10">
-                        <Activity className="w-5 h-5 text-purple-500" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-primary">Temporal Fusion Transformer</div>
-                        <div className="text-sm text-text-muted">Time Series Forecasting</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        modelPredictions.tft.prediction === 'LONG' ? 'text-success' : 'text-danger'
-                      }`}>
-                        {modelPredictions.tft.prediction}
-                      </div>
-                      <div className="text-sm text-text-secondary">
-                        {modelPredictions.tft.confidence?.toFixed(0)}% confidence
-                      </div>
-                    </div>
+                  <div className="text-text-muted text-sm mb-1">AI Consensus</div>
+                  <div className="text-2xl font-bold text-text-primary">
+                    {consensus !== null ? `${Math.round(consensus)}%` : 'N/A'}
                   </div>
-                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-purple-500 to-purple-400"
-                      style={{ width: `${modelPredictions.tft.confidence}%` }}
-                    />
+                  <div className="text-xs text-text-secondary mt-1">AI alignment</div>
+                </div>
+                <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
+                  <div className="text-text-muted text-sm mb-1">Market Regime</div>
+                  <div className="text-2xl font-bold text-text-primary">
+                    {signal.market_regime || 'Not specified'}
                   </div>
                 </div>
-
-                {/* Stockformer */}
                 <div className="p-4 rounded-xl bg-background-elevated border border-gray-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-green-500/10">
-                        <TrendingUp className="w-5 h-5 text-green-500" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-text-primary">Stockformer</div>
-                        <div className="text-sm text-text-muted">Stock-Specific Transformer</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        modelPredictions.stockformer.prediction === 'LONG' ? 'text-success' : 'text-danger'
-                      }`}>
-                        {modelPredictions.stockformer.prediction}
-                      </div>
-                      <div className="text-sm text-text-secondary">
-                        {modelPredictions.stockformer.confidence?.toFixed(0)}% confidence
-                      </div>
-                    </div>
+                  <div className="text-text-muted text-sm mb-1">Validity</div>
+                  <div className="text-2xl font-bold text-text-primary">
+                    {validUntil ? new Date(validUntil).toLocaleDateString() : 'Not specified'}
                   </div>
-                  <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-green-500 to-green-400"
-                      style={{ width: `${modelPredictions.stockformer.confidence}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Ensemble */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-500/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-blue-500/20">
-                        <Brain className="w-5 h-5 text-blue-400" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-white">Ensemble Prediction</div>
-                        <div className="text-sm text-blue-200">
-                          {(modelPredictions.model_agreement * 100).toFixed(0)}% Model Agreement
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-white">
-                        {modelPredictions.ensemble_confidence?.toFixed(0)}%
-                      </div>
-                      <div className="text-sm text-blue-200">Confidence</div>
-                    </div>
+                  <div className="text-xs text-text-secondary mt-1">
+                    {generatedAt ? `Generated ${new Date(generatedAt).toLocaleDateString()}` : 'Realtime updates'}
                   </div>
                 </div>
               </div>
-              
-              {/* Strategy Confluence */}
+
+              {/* AI Confluence */}
               {signal.strategy_confluence && (
                 <div className="mt-4 p-4 rounded-xl bg-background-elevated border border-gray-800">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-text-secondary">Strategy Confluence</span>
+                    <span className="text-text-secondary">AI Confluence</span>
                     <span className="text-xl font-bold text-primary">{signal.strategy_confluence.toFixed(0)}%</span>
                   </div>
                   {signal.active_strategies && signal.active_strategies.length > 0 && (
@@ -646,7 +563,7 @@ export default function SignalDetailPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-text-secondary">Created</span>
                   <span className="text-text-primary font-mono text-sm">
-                    {new Date(signal.generated_at).toLocaleString()}
+                    {generatedAt ? new Date(generatedAt).toLocaleString() : 'Not specified'}
                   </span>
                 </div>
 
@@ -681,7 +598,7 @@ export default function SignalDetailPage() {
 
                 <div className="flex items-center gap-2 text-success">
                   <Target className="w-4 h-4" />
-                  <span className="text-sm">Target at ₹{signal.target_1.toFixed(2)}</span>
+                  <span className="text-sm">Target at ₹{target1.toFixed(2)}</span>
                 </div>
 
                 {signal.target_2 && (
@@ -701,7 +618,7 @@ export default function SignalDetailPage() {
                 <div className="flex items-center gap-2 text-text-secondary">
                   <TrendingUp className="w-4 h-4" />
                   <span className="text-sm">
-                    Potential: ₹{((signal.target_1 - signal.entry_price) * 100).toFixed(2)} (per 100)
+                    Potential: ₹{((target1 - signal.entry_price) * 100).toFixed(2)} (per 100)
                   </span>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 // ============================================================================
 // SWINGAI - SCANNER CARD COMPONENT
-// AI Beta Screener scan results preview
+// AI Screener scan results preview
 // ============================================================================
 
 'use client'

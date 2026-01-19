@@ -47,6 +47,36 @@ const isSupabaseConfigured = Boolean(
 
 // Check if we're in production build
 const isProduction = process.env.NODE_ENV === 'production'
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+const allowDemo = isDemoMode && !isProduction
+
+const demoCreatedAt = new Date().toISOString()
+const DEMO_USER = {
+  id: 'demo-user',
+  email: 'demo@swingai.local',
+  app_metadata: {},
+  user_metadata: { full_name: 'Demo User' },
+  aud: 'authenticated',
+  created_at: demoCreatedAt,
+} as User
+
+const DEMO_PROFILE: UserProfile = {
+  id: DEMO_USER.id,
+  email: DEMO_USER.email,
+  full_name: 'Demo User',
+  capital: 250000,
+  risk_profile: 'moderate',
+  trading_mode: 'signal_only',
+  max_positions: 5,
+  risk_per_trade: 1,
+  fo_enabled: false,
+  subscription_status: 'trial',
+  broker_connected: false,
+  total_trades: 0,
+  winning_trades: 0,
+  total_pnl: 0,
+  created_at: demoCreatedAt,
+}
 
 // ============================================================================
 // PROVIDER
@@ -59,6 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
+  const setDemoSession = () => {
+    setUser(DEMO_USER)
+    setProfile(DEMO_PROFILE)
+  }
+
   // ============================================================================
   // LOAD USER ON MOUNT
   // ============================================================================
@@ -69,7 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check if Supabase is configured
         if (!isSupabaseConfigured) {
           console.warn('⚠️ Supabase is not configured. Authentication will not work.')
-          if (!isProduction) {
+          if (allowDemo) {
+            setDemoSession()
+          } else if (!isProduction) {
             console.info('💡 Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file')
           }
           setLoading(false)
@@ -175,6 +212,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     if (!isSupabaseConfigured) {
+      if (allowDemo) {
+        setDemoSession()
+        return
+      }
       throw new Error('Authentication is not configured. Please contact support.')
     }
 
@@ -215,6 +256,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
+      if (allowDemo) {
+        setDemoSession()
+        router.push('/dashboard')
+        return
+      }
       throw new Error('Authentication is not configured. Please contact support.')
     }
 
@@ -248,6 +294,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!isSupabaseConfigured) {
+      if (allowDemo) {
+        setDemoSession()
+        router.push('/dashboard')
+        return
+      }
       throw new Error('Authentication is not configured. Please contact support.')
     }
 

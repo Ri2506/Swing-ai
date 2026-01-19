@@ -101,6 +101,8 @@ data/
 # Local config
 config.local.py
 secrets.json
+.gitconfig
+.emergent/
 
 # Railway
 .railway/

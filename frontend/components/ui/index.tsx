@@ -8,19 +8,22 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background-primary disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/25",
-        destructive: "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25",
-        outline: "border border-gray-700 bg-transparent hover:bg-gray-800 text-white",
-        secondary: "bg-gray-800 text-white hover:bg-gray-700",
-        ghost: "hover:bg-gray-800 text-gray-400 hover:text-white",
-        link: "text-blue-500 underline-offset-4 hover:underline",
-        success: "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/25",
-        warning: "bg-yellow-600 text-white hover:bg-yellow-700",
-        gradient: "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_12px_30px_rgba(var(--primary),0.25)]",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-[0_12px_30px_rgba(var(--danger),0.25)]",
+        outline: "border border-border bg-transparent text-text-primary hover:bg-background-elevated",
+        secondary: "bg-background-elevated text-text-primary hover:bg-background-surface",
+        ghost: "hover:bg-background-elevated text-text-secondary hover:text-text-primary",
+        link: "text-accent underline-offset-4 hover:underline",
+        success:
+          "bg-success text-primary-foreground hover:bg-success/90 shadow-[0_12px_30px_rgba(var(--success),0.25)]",
+        warning: "bg-warning text-black hover:bg-warning/90",
+        gradient: "bg-gradient-primary text-primary-foreground hover:opacity-90 shadow-lg",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -70,8 +73,8 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-2xl bg-gray-900/50 backdrop-blur-xl border border-gray-800 shadow-xl",
-      gradient && "bg-gradient-to-br from-gray-900 to-gray-950",
+      "rounded-2xl bg-background-surface/70 backdrop-blur-xl border border-border shadow-xl",
+      gradient && "bg-gradient-to-br from-background-surface to-background-elevated",
       className
     )}
     {...props}
@@ -97,7 +100,7 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("text-xl font-bold text-white", className)}
+    className={cn("text-xl font-bold text-text-primary", className)}
     {...props}
   />
 ))
@@ -109,7 +112,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-gray-400", className)}
+    className={cn("text-sm text-text-secondary", className)}
     {...props}
   />
 ))
@@ -146,12 +149,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-blue-600/20 text-blue-400 border border-blue-500/30",
-        success: "bg-green-600/20 text-green-400 border border-green-500/30",
-        warning: "bg-yellow-600/20 text-yellow-400 border border-yellow-500/30",
-        danger: "bg-red-600/20 text-red-400 border border-red-500/30",
-        purple: "bg-purple-600/20 text-purple-400 border border-purple-500/30",
-        outline: "border border-gray-700 text-gray-300",
+        default: "bg-primary/15 text-primary border border-primary/30",
+        success: "bg-success/15 text-success border border-success/30",
+        warning: "bg-warning/15 text-warning border border-warning/30",
+        danger: "bg-danger/15 text-danger border border-danger/30",
+        purple: "bg-accent/15 text-accent border border-accent/30",
+        outline: "border border-border text-text-secondary",
       },
     },
     defaultVariants: {
@@ -180,7 +183,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          "flex h-11 w-full rounded-xl border border-gray-700 bg-gray-900/50 px-4 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all",
+          "flex h-11 w-full rounded-xl border border-border bg-background-elevated/70 px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all",
           className
         )}
         ref={ref}
@@ -211,7 +214,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-11 w-full items-center justify-between rounded-xl border border-gray-700 bg-gray-900/50 px-4 py-2 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50",
+      "flex h-11 w-full items-center justify-between rounded-xl border border-border bg-background-elevated/70 px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
       className
     )}
     {...props}
@@ -232,7 +235,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-gray-700 bg-gray-900 shadow-xl",
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-border bg-background-elevated shadow-xl",
         className
       )}
       position={position}
@@ -253,14 +256,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 px-3 text-sm text-white outline-none hover:bg-gray-800 focus:bg-gray-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 px-3 text-sm text-text-primary outline-none hover:bg-background-surface focus:bg-background-surface data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}
   >
     <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-blue-500" />
+        <Check className="h-4 w-4 text-primary" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -285,7 +288,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center rounded-xl bg-gray-900/50 p-1 border border-gray-800",
+      "inline-flex items-center justify-center rounded-xl bg-background-elevated/70 p-1 border border-border",
       className
     )}
     {...props}
@@ -300,7 +303,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-gray-400 transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg",
       className
     )}
     {...props}
@@ -337,7 +340,7 @@ const Progress = React.forwardRef<
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
-      "relative h-2 w-full overflow-hidden rounded-full bg-gray-800",
+      "relative h-2 w-full overflow-hidden rounded-full bg-background-surface",
       className
     )}
     {...props}
@@ -345,7 +348,7 @@ const Progress = React.forwardRef<
     <ProgressPrimitive.Indicator
       className={cn(
         "h-full w-full flex-1 transition-all rounded-full",
-        indicatorColor || "bg-blue-600"
+        indicatorColor || "bg-primary"
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
@@ -391,14 +394,14 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-gray-800 bg-gray-950 p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background-elevated p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl",
         className
       )}
       {...props}
     >
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none">
-        <X className="h-4 w-4 text-gray-400" />
+        <X className="h-4 w-4 text-text-secondary" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -420,7 +423,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold text-white", className)}
+    className={cn("text-lg font-semibold text-text-primary", className)}
     {...props}
   />
 ))
@@ -432,7 +435,7 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn("text-sm text-gray-400", className)}
+    className={cn("text-sm text-text-secondary", className)}
     {...props}
   />
 ))
@@ -468,7 +471,7 @@ const TooltipContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     className={cn(
-      "z-50 overflow-hidden rounded-lg bg-gray-900 border border-gray-800 px-3 py-1.5 text-sm text-white shadow-xl animate-in fade-in-0 zoom-in-95",
+      "z-50 overflow-hidden rounded-lg bg-background-elevated border border-border px-3 py-1.5 text-sm text-text-primary shadow-xl animate-in fade-in-0 zoom-in-95",
       className
     )}
     {...props}
@@ -489,7 +492,7 @@ const Separator = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "shrink-0 bg-gray-800",
+      "shrink-0 bg-background-surface",
       orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
       className
     )}
@@ -510,7 +513,7 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-xl bg-gray-800/50", className)}
+      className={cn("animate-pulse rounded-xl bg-background-surface/60", className)}
       {...props}
     />
   )
@@ -540,7 +543,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b border-gray-800", className)} {...props} />
+  <thead ref={ref} className={cn("[&_tr]:border-b border-border", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -562,7 +565,7 @@ const TableFooter = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tfoot
     ref={ref}
-    className={cn("border-t bg-gray-900/50 font-medium [&>tr]:last:border-b-0", className)}
+    className={cn("border-t bg-background-elevated/70 font-medium [&>tr]:last:border-b-0", className)}
     {...props}
   />
 ))
@@ -575,7 +578,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-gray-800 transition-colors hover:bg-gray-900/50 data-[state=selected]:bg-gray-800",
+      "border-b border-border transition-colors hover:bg-background-elevated/70 data-[state=selected]:bg-background-surface",
       className
     )}
     {...props}
@@ -590,7 +593,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-gray-400 [&:has([role=checkbox])]:pr-0",
+      "h-12 px-4 text-left align-middle font-medium text-text-secondary [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}
@@ -604,7 +607,7 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle text-white [&:has([role=checkbox])]:pr-0", className)}
+    className={cn("p-4 align-middle text-text-primary [&:has([role=checkbox])]:pr-0", className)}
     {...props}
   />
 ))
@@ -616,7 +619,7 @@ const TableCaption = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <caption
     ref={ref}
-    className={cn("mt-4 text-sm text-gray-400", className)}
+    className={cn("mt-4 text-sm text-text-secondary", className)}
     {...props}
   />
 ))
@@ -655,7 +658,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-xl border border-gray-800 bg-gray-950 p-1 text-white shadow-xl",
+        "z-50 min-w-[8rem] overflow-hidden rounded-xl border border-border bg-background-elevated p-1 text-text-primary shadow-xl",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className
       )}
@@ -674,7 +677,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none transition-colors focus:bg-gray-800 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm outline-none transition-colors focus:bg-background-surface data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       inset && "pl-8",
       className
     )}
@@ -692,7 +695,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-3 py-1.5 text-sm font-semibold text-gray-400",
+      "px-3 py-1.5 text-sm font-semibold text-text-secondary",
       inset && "pl-8",
       className
     )}
@@ -707,7 +710,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-gray-800", className)}
+    className={cn("-mx-1 my-1 h-px bg-background-surface", className)}
     {...props}
   />
 ))
@@ -738,7 +741,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitive.Root
     className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-950 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-gray-700",
+      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background-primary disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=unchecked]:bg-background-elevated",
       className
     )}
     {...props}
@@ -795,7 +798,7 @@ const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-gray-800 text-white",
+      "flex h-full w-full items-center justify-center rounded-full bg-background-surface text-text-primary",
       className
     )}
     {...props}

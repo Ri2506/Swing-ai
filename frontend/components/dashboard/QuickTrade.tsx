@@ -1,6 +1,6 @@
 // ============================================================================
 // SWINGAI - QUICK TRADE COMPONENT
-// Modal for fast order entry with AI suggestions
+// Modal for fast order entry with execution suggestions
 // ============================================================================
 
 'use client'

@@ -130,10 +130,10 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-text-primary mb-2">
-              Welcome Back
+              Secure Access
             </h1>
             <p className="text-text-secondary">
-              Sign in to continue to your trading dashboard
+              Sign in to your AI trading workspace
             </p>
           </div>
 
@@ -162,7 +162,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-background-surface text-text-muted">
-                Or continue with email
+                Or sign in with email
               </span>
             </div>
           </div>
@@ -296,14 +296,14 @@ export default function LoginPage() {
           className="text-center mt-6 text-sm text-text-muted"
         >
           <p>
-            Protected by enterprise-grade encryption
+            Protected by enterprise-grade security controls
           </p>
           <div className="flex items-center justify-center gap-4 mt-2">
-            <span className="text-xs">5000+ Traders</span>
+            <span className="text-xs">2,400+ Traders</span>
             <span className="text-xs">•</span>
-            <span className="text-xs">₹50Cr+ Analyzed</span>
+            <span className="text-xs">₹12.4Cr Tracked</span>
             <span className="text-xs">•</span>
-            <span className="text-xs">58% Accuracy</span>
+            <span className="text-xs">73.2% Win Rate</span>
           </div>
         </motion.div>
       </motion.div>
