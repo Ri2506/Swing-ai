@@ -236,7 +236,7 @@ export default function PricingSection6() {
         }}
       />
 
-      <div className="grid md:grid-cols-3 max-w-5xl gap-4 py-6 mx-auto ">
+      <div className="grid md:grid-cols-2 max-w-4xl gap-6 py-6 mx-auto px-6">
         {plans.map((plan, index) => (
           <TimelineContent
             key={plan.name}
