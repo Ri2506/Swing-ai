@@ -1,85 +1,91 @@
 // ============================================================================
 // SWINGAI - POSITIONS HOOK
-// Fetch and manage trading positions
+// Simplified version for MVP
 // ============================================================================
 
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, handleApiError } from '../lib/api'
 import { toast } from 'sonner'
 
-// ============================================================================
-// GET ALL POSITIONS
-// ============================================================================
+const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
+
+// Mock positions data
+const mockPositions = [
+  {
+    id: '1',
+    symbol: 'RELIANCE',
+    direction: 'LONG',
+    quantity: 50,
+    average_price: 2780,
+    current_price: 2847.50,
+    unrealized_pnl: 3375,
+    unrealized_pnl_percent: 2.43,
+    is_active: true,
+  },
+]
 
 export function usePositions() {
   return useQuery({
     queryKey: ['positions'],
-    queryFn: () => api.positions.getAll(),
-    staleTime: 10000, // 10 seconds
-    refetchInterval: 30000, // Refetch every 30 seconds for live P&L
-  })
-}
-
-// ============================================================================
-// GET POSITION BY ID
-// ============================================================================
-
-export function usePosition(id: string) {
-  return useQuery({
-    queryKey: ['position', id],
-    queryFn: () => api.positions.getById(id),
-    enabled: !!id,
+    queryFn: async () => {
+      // Return mock data for now
+      return { positions: mockPositions }
+    },
     staleTime: 10000,
     refetchInterval: 30000,
   })
 }
 
-// ============================================================================
-// CLOSE POSITION
-// ============================================================================
+export function usePosition(id: string) {
+  return useQuery({
+    queryKey: ['position', id],
+    queryFn: async () => {
+      return mockPositions.find(p => p.id === id) || null
+    },
+    enabled: !!id,
+    staleTime: 10000,
+  })
+}
 
 export function useClosePosition() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (positionId: string) => api.positions.close(positionId),
+    mutationFn: async (positionId: string) => {
+      // Mock close position
+      return { success: true }
+    },
     onSuccess: () => {
       toast.success('Position closed successfully!')
       queryClient.invalidateQueries({ queryKey: ['positions'] })
-      queryClient.invalidateQueries({ queryKey: ['portfolio'] })
-      queryClient.invalidateQueries({ queryKey: ['trades'] })
     },
-    onError: (error) => {
-      const message = handleApiError(error)
-      toast.error(`Failed to close position: ${message}`)
+    onError: () => {
+      toast.error('Failed to close position')
     },
   })
 }
-
-// ============================================================================
-// UPDATE SL/TARGET
-// ============================================================================
 
 export function useUpdateSlTarget() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       positionId,
       data,
     }: {
       positionId: string
       data: { stop_loss?: number; target?: number }
-    }) => api.positions.updateSlTarget(positionId, data),
+    }) => {
+      // Mock update
+      return { success: true }
+    },
     onSuccess: () => {
       toast.success('SL/Target updated successfully!')
       queryClient.invalidateQueries({ queryKey: ['positions'] })
     },
-    onError: (error) => {
-      const message = handleApiError(error)
-      toast.error(`Failed to update SL/Target: ${message}`)
+    onError: () => {
+      toast.error('Failed to update SL/Target')
     },
   })
 }
