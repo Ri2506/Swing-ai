@@ -17,11 +17,15 @@ import {
   LogOut,
   Menu,
   X,
+  Calculator,
+  Shield,
 } from 'lucide-react'
+import CalculatorModal from '@/components/CalculatorModal'
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [calculatorType, setCalculatorType] = useState<'position' | 'risk' | null>(null)
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -33,6 +37,15 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
   return (
     <div className="min-h-screen bg-background-primary">
+      {/* Calculator Modals */}
+      {calculatorType && (
+        <CalculatorModal
+          isOpen={!!calculatorType}
+          onClose={() => setCalculatorType(null)}
+          type={calculatorType}
+        />
+      )}
+
       {/* Top Navigation */}
       <nav className="fixed top-0 z-50 w-full border-b border-border/60 bg-background-primary/80 backdrop-blur-xl">
         <div className="mx-auto px-6">
@@ -66,6 +79,22 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
+              {/* Calculator Buttons */}
+              <button
+                onClick={() => setCalculatorType('position')}
+                className="hidden items-center gap-2 rounded-lg border border-primary/60 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/20 md:flex"
+              >
+                <Calculator className="h-4 w-4" />
+                Position Size
+              </button>
+              <button
+                onClick={() => setCalculatorType('risk')}
+                className="hidden items-center gap-2 rounded-lg border border-accent/60 bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/20 md:flex"
+              >
+                <Shield className="h-4 w-4" />
+                Risk Manager
+              </button>
+
               <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-text-secondary transition hover:text-accent">
                 <Bell className="h-4 w-4" />
               </button>
@@ -108,6 +137,30 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
                   </Link>
                 )
               })}
+              
+              {/* Mobile Calculator Buttons */}
+              <div className="mt-4 space-y-2 px-4">
+                <button
+                  onClick={() => {
+                    setCalculatorType('position')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg border border-primary/60 bg-primary/10 px-4 py-3 text-sm font-medium text-primary"
+                >
+                  <Calculator className="h-5 w-5" />
+                  Position Size Calculator
+                </button>
+                <button
+                  onClick={() => {
+                    setCalculatorType('risk')
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg border border-accent/60 bg-accent/10 px-4 py-3 text-sm font-medium text-accent"
+                >
+                  <Shield className="h-5 w-5" />
+                  Risk Management Calculator
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -118,3 +171,4 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     </div>
   )
 }
+
