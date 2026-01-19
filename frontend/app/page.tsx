@@ -881,7 +881,7 @@ export default function LandingPage() {
                 className="flex items-center gap-2 rounded-full border border-border/40 bg-background-surface/50 px-4 py-2.5 text-xs font-medium text-text-secondary backdrop-blur-xl"
               >
                 <Lock className="h-4 w-4 text-success" />
-                <span>Bank-grade AES-256 encryption</span>
+                <span>SSL encrypted data transmission</span>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -891,7 +891,7 @@ export default function LandingPage() {
                 className="flex items-center gap-2 rounded-full border border-border/40 bg-background-surface/50 px-4 py-2.5 text-xs font-medium text-text-secondary backdrop-blur-xl"
               >
                 <BarChart3 className="h-4 w-4 text-accent" />
-                <span>28,000+ signals tracked</span>
+                <span>2,847+ signals tracked</span>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -901,7 +901,7 @@ export default function LandingPage() {
                 className="flex items-center gap-2 rounded-full border border-border/40 bg-background-surface/50 px-4 py-2.5 text-xs font-medium text-text-secondary backdrop-blur-xl"
               >
                 <CheckCircle className="h-4 w-4 text-success" />
-                <span>SEBI-compliant market data</span>
+                <span>NSE/BSE real-time data feeds</span>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -911,7 +911,7 @@ export default function LandingPage() {
                 className="flex items-center gap-2 rounded-full border border-border/40 bg-background-surface/50 px-4 py-2.5 text-xs font-medium text-text-secondary backdrop-blur-xl"
               >
                 <Globe className="h-4 w-4 text-accent" />
-                <span>ISO 27001 certified infrastructure</span>
+                <span>Cloud-based infrastructure</span>
               </motion.div>
             </div>
 
