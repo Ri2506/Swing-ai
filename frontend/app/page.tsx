@@ -826,7 +826,7 @@ export default function LandingPage() {
             >
               <span className="text-text-primary">AI-Powered Neural</span>
               <br />
-              <span className="gradient-text-holographic gradient-text-hover">
+              <span className="gradient-text-hero gradient-text-hover-pro">
                 Market Intelligence
               </span>
             </motion.h1>
