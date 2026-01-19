@@ -558,27 +558,27 @@ export default function LandingPage() {
   const features = [
     {
       icon: Eye,
-      title: 'Pre-Breakout Intelligence',
+      title: 'AI Neural Pattern Recognition',
       description:
-        'Proprietary algorithms identify institutional accumulation patterns before public price discovery, enabling strategic positioning ahead of momentum expansion with asymmetric risk-reward profiles.',
+        'Deep learning neural networks analyze multi-dimensional market data to identify institutional accumulation patterns before public breakouts. Our AI engine processes millions of data points to position you ahead of retail momentum.',
     },
     {
       icon: Zap,
-      title: 'Institutional-Grade Surveillance',
+      title: 'Machine Learning Signal Generation',
       description:
-        'Continuous real-time analysis of 500+ liquid equities across NSE/BSE with probabilistic scoring models, filtering noise to deliver only high-conviction setups with quantified edge and defined risk parameters.',
+        'Advanced ML algorithms with ensemble modeling continuously scan 500+ liquid NSE/BSE equities. AI-powered probabilistic scoring delivers only the highest-conviction setups with quantified edge and AI-optimized risk parameters.',
     },
     {
       icon: Shield,
-      title: 'Systematic Risk Architecture',
+      title: 'AI-Driven Risk Management',
       description:
-        'Multi-layered risk management framework with volatility-adjusted position sizing, portfolio-level exposure controls, and automated kill-switches ensuring capital preservation through all market regimes.',
+        'Intelligent risk architecture powered by artificial intelligence with dynamic position sizing, portfolio-level exposure controls, and automated AI kill-switches. Machine learning adapts to market volatility in real-time.',
     },
     {
       icon: Brain,
-      title: 'Regime-Adaptive Intelligence',
+      title: 'Adaptive AI Intelligence',
       description:
-        'Machine learning systems automatically calibrate signal generation parameters across trending, mean-reverting, and volatile market conditions, maintaining edge consistency without manual intervention.',
+        'Self-learning AI systems automatically detect and adapt to changing market regimes. Neural networks calibrate signal generation parameters across trending, ranging, and volatile conditions without manual intervention.',
     },
   ]
 
