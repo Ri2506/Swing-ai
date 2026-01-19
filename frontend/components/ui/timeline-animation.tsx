@@ -2,30 +2,25 @@
 
 import { motion, type Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { type ElementType, type HTMLAttributes, type ReactNode, type RefObject } from "react";
+import { type ReactNode, type RefObject } from "react";
 
 type TimelineContentProps = {
-  as?: ElementType;
   animationNum?: number;
   timelineRef?: RefObject<HTMLElement | null>;
   customVariants?: Variants;
   className?: string;
   children?: ReactNode;
-} & HTMLAttributes<HTMLElement>;
+};
 
 export function TimelineContent({
-  as = "div",
   animationNum = 0,
   timelineRef,
   customVariants,
   className,
   children,
-  ...props
 }: TimelineContentProps) {
-  const MotionComponent = motion(as as any);
-
   return (
-    <MotionComponent
+    <motion.div
       className={cn(className)}
       variants={customVariants}
       initial="hidden"
@@ -36,9 +31,8 @@ export function TimelineContent({
         root: timelineRef,
       }}
       custom={animationNum}
-      {...props}
     >
       {children}
-    </MotionComponent>
+    </motion.div>
   );
 }
