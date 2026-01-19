@@ -977,10 +977,10 @@ export default function LandingPage() {
               className="mb-16 text-center"
             >
               <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold text-text-primary md:text-5xl">
-                Proprietary Intelligence Architecture
+                AI-Powered Intelligence Architecture
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
-                Institutional-grade capabilities engineered for systematic alpha generation and risk-adjusted returns
+                Advanced artificial intelligence and machine learning capabilities engineered for institutional-grade systematic alpha generation
               </motion.p>
             </motion.div>
 
