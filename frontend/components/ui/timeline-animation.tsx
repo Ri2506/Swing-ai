@@ -33,7 +33,7 @@ export function TimelineContent({
       viewport={{
         once: true,
         amount: 0.25,
-        root: timelineRef?.current as Element | undefined,
+        root: timelineRef,
       }}
       custom={animationNum}
       {...props}
