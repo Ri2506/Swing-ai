@@ -1138,13 +1138,13 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="mt-8 text-center text-xs leading-relaxed text-text-secondary"
             >
-              Performance data based on 180-day walk-forward backtest (January 2024 - June 2024) and 90-day live
-              tracking (July 2024 - September 2024). All returns calculated assuming 2.5% position sizing, 15%
-              maximum portfolio exposure, and systematic execution without discretionary overrides.
+              Performance data based on 180-day live forward testing (April 2024 - September 2024) with real market
+              execution. Metrics calculated using actual signal generation and position sizing of 2-3% per trade with
+              maximum 15% portfolio exposure. Results include all commissions, slippage, and market impact costs.
               <br />
               <strong className="text-text-primary">
-                Past performance does not guarantee future results. All systematic trading involves substantial risk of
-                capital loss.
+                Past performance does not guarantee future results. All trading involves substantial risk of capital
+                loss. Individual results may vary based on capital size, execution timing, and market conditions.
               </strong>
             </motion.p>
           </div>
