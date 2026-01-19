@@ -1004,7 +1004,7 @@ export default function LandingPage() {
               className="mb-16 text-center"
             >
               <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold md:text-5xl">
-                <span className="gradient-text-cosmic">Implementation</span>{' '}
+                <span className="gradient-text-accent">Implementation</span>{' '}
                 <span className="text-text-primary">Protocol</span>
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
