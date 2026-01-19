@@ -846,10 +846,10 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-text-secondary"
             >
-              Proprietary algorithmic intelligence continuously analyzes 500+ liquid Indian equities, identifying
-              institutional accumulation patterns before public price discovery. Probabilistic signal generation with
-              precision entry zones, volatility-calibrated stops, and multi-target exits engineered for systematic
-              alpha capture.
+              Advanced artificial intelligence and deep learning neural networks continuously analyze 500+ liquid Indian
+              equities. Our proprietary AI algorithms detect institutional accumulation patterns before public price
+              discovery, delivering probability-scored signals with precision entry zones, AI-optimized stops, and
+              multi-target exits engineered for systematic alpha generation.
             </motion.p>
 
             <motion.div
