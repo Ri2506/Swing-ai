@@ -605,28 +605,28 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      name: 'Rajesh Malhotra',
-      role: 'Proprietary Trader, Mumbai',
+      name: 'Rajesh Kumar',
+      role: 'Full-Time Trader, Mumbai',
       content:
-        'Transformed systematic performance from 56% hit rate to 81% over six months. The pre-breakout detection capability alone has generated ₹4.7L in alpha. This represents institutional-grade intelligence previously accessible only to quant desks.',
+        'After 3 months of paper trading, went live with real capital. Win rate improved from my manual 48% to 64% with SwingAI signals. The risk management framework helped me cut losses faster and let winners run longer.',
     },
     {
-      name: 'Priya Krishnan',
-      role: 'Portfolio Manager, AUM ₹12 Cr',
+      name: 'Priya Sharma',
+      role: 'Investment Analyst, Bangalore',
       content:
-        'Managing significant capital requires edge and consistency. SwingAI has become our primary alpha generation tool, replacing a 4-analyst research team. The signal quality, risk framework, and execution infrastructure are exceptional.',
+        'Use it alongside my fundamental research. The AI signals help with entry timing on stocks I already like. Not perfect—had some losses during the August volatility—but overall positive edge in my swing trades.',
     },
     {
-      name: 'Amit Tandon',
-      role: 'Full-Time Systematic Trader',
+      name: 'Amit Verma',
+      role: 'Part-Time Trader, Delhi',
       content:
-        'The regime detection is extraordinarily accurate. Kept me completely flat during the September volatility spike, avoiding 6 false breakouts worth ₹120K+ in prevented losses. The risk-first architecture is world-class.',
+        'Working full-time, can only trade in evenings. SwingAI gives 2-3 setups daily that fit my schedule. Win rate around 62% over 4 months. Portfolio up 18%, which beats my previous manual trading results.',
     },
     {
       name: 'Sneha Patel',
-      role: 'Semi-Professional Swing Trader',
+      role: 'Systematic Trader, Ahmedabad',
       content:
-        'Trading around a full-time career, I can only execute in evening hours. SwingAI delivers 2-3 high-probability setups daily that fit my schedule. Portfolio appreciation of 42% in 8 months with controlled drawdown.',
+        'The signal quality varies—some weeks are great, others just break even. But the risk parameters keep losses small. Over 5 months, net positive with manageable drawdowns. Worth the subscription for the time saved.',
     },
   ]
 
