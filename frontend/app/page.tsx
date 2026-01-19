@@ -546,10 +546,10 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false)
 
   const stats = [
-    { label: 'Capital Under Management', value: 18.7, prefix: '₹', suffix: ' Cr', decimals: 1 },
-    { label: 'Annualized Win Rate', value: 78.4, suffix: '%', decimals: 1 },
-    { label: 'Average Risk:Reward', value: 5.2, suffix: ':1', decimals: 1 },
-    { label: 'Institutional Clients', value: 2400, suffix: '+', decimals: 0 },
+    { label: 'Capital Under Management', value: 12.4, prefix: '₹', suffix: ' Cr', decimals: 1 },
+    { label: 'Win Rate (180d)', value: 68.4, suffix: '%', decimals: 1 },
+    { label: 'Average Risk:Reward', value: 2.8, suffix: ':1', decimals: 1 },
+    { label: 'Active Traders', value: 1847, suffix: '+', decimals: 0 },
   ]
 
   const features = [
