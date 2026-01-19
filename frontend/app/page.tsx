@@ -810,10 +810,12 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-accent backdrop-blur-xl"
+              className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 backdrop-blur-xl"
             >
-              <Terminal className="h-4 w-4" />
-              AI-Powered Neural Trading Platform
+              <Terminal className="h-4 w-4 text-accent" />
+              <span className="text-xs font-semibold uppercase tracking-wider gradient-text-primary">
+                AI-Powered Neural Trading Platform
+              </span>
             </motion.div>
 
             <motion.h1
