@@ -820,11 +820,11 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="mb-6 text-5xl font-bold leading-tight text-text-primary md:text-7xl"
+              className="mb-6 text-5xl font-bold leading-tight md:text-7xl"
             >
-              AI-Powered Neural
+              <span className="text-text-primary">AI-Powered Neural</span>
               <br />
-              <span className="bg-gradient-to-r from-accent via-primary to-accent bg-clip-text text-transparent">
+              <span className="gradient-text-holographic gradient-text-hover">
                 Market Intelligence
               </span>
             </motion.h1>
