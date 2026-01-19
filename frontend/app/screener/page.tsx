@@ -18,7 +18,7 @@ import {
   Download, Grid3X3, List, ArrowLeft, Bell, Sun, Menu, ExternalLink,
   Sparkles, Radio, Wifi, WifiOff, Database, Cpu, Globe2, Shield,
   LineChart, CandlestickChart, Layers, Box, Triangle, Circle, Square,
-  Hexagon, Crosshair, ArrowRightLeft, DollarSign, Percent, Hash, Lock,
+  Hexagon, Crosshair, ArrowRightLeft, DollarSign, Moon, Percent, Hash, Lock,
   Gauge, PieChart
 } from 'lucide-react'
 
