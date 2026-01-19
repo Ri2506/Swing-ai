@@ -37,36 +37,36 @@
 }
 
 .dark {
-  --background-primary: 10 14 27;
-  --background-surface: 17 23 38;
-  --background-elevated: 22 30 48;
-  --background-secondary: 12 18 32;
-  --foreground: 245 247 255;
-  --text-primary: 245 247 255;
-  --text-secondary: 170 181 199;
-  --text-muted: 118 130 152;
-  --border: 34 44 66;
-  --card: 17 23 38;
-  --card-foreground: 245 247 255;
-  --popover: 17 23 38;
-  --popover-foreground: 245 247 255;
-  --muted: 12 18 32;
-  --muted-foreground: 118 130 152;
-  --input: 34 44 66;
+  --background-primary: 8 12 24;
+  --background-surface: 14 19 33;
+  --background-elevated: 19 26 42;
+  --background-secondary: 10 15 28;
+  --foreground: 248 250 255;
+  --text-primary: 248 250 255;
+  --text-secondary: 156 168 192;
+  --text-muted: 107 120 144;
+  --border: 30 41 61;
+  --card: 14 19 33;
+  --card-foreground: 248 250 255;
+  --popover: 14 19 33;
+  --popover-foreground: 248 250 255;
+  --muted: 10 15 28;
+  --muted-foreground: 107 120 144;
+  --input: 30 41 61;
   --primary: 0 255 136;
   --primary-foreground: 5 15 10;
-  --secondary: 12 18 32;
-  --secondary-foreground: 245 247 255;
-  --accent: 0 217 255;
+  --secondary: 10 15 28;
+  --secondary-foreground: 248 250 255;
+  --accent: 0 229 255;
   --accent-foreground: 5 15 20;
-  --ring: 0 217 255;
+  --ring: 0 229 255;
   --success: 0 255 136;
   --danger: 255 71 87;
-  --warning: 245 178 73;
-  --destructive: 239 68 68;
+  --warning: 255 186 73;
+  --destructive: 255 71 87;
   --destructive-foreground: 255 255 255;
   --radius: 0.75rem;
-  --gradient-color: 0 217 255;
+  --gradient-color: 0 229 255;
   --sparkles-color: 255 255 255;
 }
 
