@@ -50,10 +50,11 @@ export default function DashboardPage() {
 
   const fetchMarketData = async () => {
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
       const [overviewRes, trendingRes, moversRes] = await Promise.all([
-        fetch('http://localhost:8001/api/market/overview'),
-        fetch('http://localhost:8001/api/market/trending?limit=6'),
-        fetch('http://localhost:8001/api/market/top-movers'),
+        fetch(`${apiUrl}/api/market/overview`),
+        fetch(`${apiUrl}/api/market/trending?limit=6`),
+        fetch(`${apiUrl}/api/market/top-movers`),
       ])
 
       const overview = await overviewRes.json()
