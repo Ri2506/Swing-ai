@@ -7,7 +7,7 @@ import { type ElementType, type HTMLAttributes, type ReactNode, type RefObject }
 type TimelineContentProps = {
   as?: ElementType;
   animationNum?: number;
-  timelineRef?: RefObject<HTMLElement>;
+  timelineRef?: RefObject<HTMLElement | null>;
   customVariants?: Variants;
   className?: string;
   children?: ReactNode;
@@ -33,7 +33,7 @@ export function TimelineContent({
       viewport={{
         once: true,
         amount: 0.25,
-        root: timelineRef?.current ?? undefined,
+        root: timelineRef?.current as Element | undefined,
       }}
       custom={animationNum}
       {...props}
