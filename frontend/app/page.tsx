@@ -946,8 +946,9 @@ export default function LandingPage() {
                   Live Trading Terminal
                 </span>
               </motion.div>
-              <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold text-text-primary md:text-5xl">
-                Institutional-Grade Execution Platform
+              <motion.h2 variants={fadeInUp} className="mb-6 text-4xl font-bold md:text-5xl">
+                <span className="gradient-text-plasma">Institutional-Grade</span>{' '}
+                <span className="text-text-primary">Execution Platform</span>
               </motion.h2>
               <motion.p variants={fadeInUp} className="mx-auto max-w-3xl text-lg text-text-secondary">
                 Real-time signal generation, portfolio surveillance, and systematic execution infrastructure in a
