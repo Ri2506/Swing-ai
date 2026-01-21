@@ -41,7 +41,7 @@ export default function SignalsPage() {
 
   const fetchSignals = async () => {
     try {
-      // Mock signals data
+      // Mock signals data - LONG positions only
       const mockSignals: Signal[] = [
         {
           id: '1',
@@ -73,12 +73,12 @@ export default function SignalsPage() {
           id: '3',
           symbol: 'HDFCBANK',
           name: 'HDFC Bank Ltd',
-          direction: 'SHORT',
-          entry_price: 1678.00,
-          target_price: 1580.00,
-          stop_loss: 1720.00,
+          direction: 'LONG',
+          entry_price: 1650.00,
+          target_price: 1780.00,
+          stop_loss: 1600.00,
           confidence: 75,
-          risk_reward: 2.33,
+          risk_reward: 2.60,
           generated_at: new Date(Date.now() - 2 * 3600000).toISOString(),
           status: 'triggered',
         },
