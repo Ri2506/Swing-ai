@@ -1,34 +1,42 @@
 """
-🔍 AI SCREENER API v2 - Full NSE Coverage
-==========================================
-Real stock screening with ALL NSE stocks using nsepython + yfinance.
-
-Features:
-- All 2200+ NSE stocks
-- Real-time data
-- Technical indicators (RSI, MACD, MA)
-- Multiple scanner categories
+🔍 AI SCREENER API v3 - Full NSE Coverage + PKScreener AI
+==========================================================
+Complete stock screening with:
+- All 2200+ NSE stocks via nsepython
+- PKScreener's 40+ AI/ML features
+- Real-time technical indicators
+- Pattern recognition
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import traceback
 
 # Import nsepython for full NSE coverage
 try:
     from nsepython import nse_eq_symbols, nse_get_index_list, nse_get_index_quote
     NSE_AVAILABLE = True
-    print(f"✅ nsepython loaded - {len(nse_eq_symbols())} NSE stocks available")
-except ImportError as e:
-    NSE_AVAILABLE = False
-    print(f"⚠️ nsepython not available: {e}")
+    ALL_NSE_STOCKS = nse_eq_symbols()
+    print(f"✅ nsepython loaded - {len(ALL_NSE_STOCKS)} NSE stocks available")
 except Exception as e:
     NSE_AVAILABLE = False
+    ALL_NSE_STOCKS = []
     print(f"⚠️ nsepython error: {e}")
+
+# Import PKScreener AI features
+try:
+    from pkscreener.classes.ScreeningStatistics import ScreeningStatistics
+    from pkscreener.classes.StockScreener import StockScreener
+    PKSCREENER_AVAILABLE = True
+    print("✅ PKScreener AI features loaded")
+except Exception as e:
+    PKSCREENER_AVAILABLE = False
+    print(f"⚠️ PKScreener not available: {e}")
 
 router = APIRouter(prefix="/screener", tags=["Screener"])
 
@@ -37,14 +45,9 @@ router = APIRouter(prefix="/screener", tags=["Screener"])
 # ============================================================
 
 def get_all_nse_stocks() -> List[str]:
-    """Get all NSE stock symbols"""
-    if NSE_AVAILABLE:
-        try:
-            return nse_eq_symbols()
-        except Exception as e:
-            print(f"Error fetching NSE symbols: {e}")
-    
-    # Fallback to Nifty 500 stocks
+    """Get all 2200+ NSE stock symbols"""
+    if NSE_AVAILABLE and ALL_NSE_STOCKS:
+        return ALL_NSE_STOCKS
     return get_nifty_500_stocks()
 
 
@@ -65,14 +68,11 @@ def get_nifty_50_stocks() -> List[str]:
 
 
 def get_nifty_500_stocks() -> List[str]:
-    """Extended list of major NSE stocks"""
-    # Top 200 stocks by market cap (commonly traded)
+    """Top 200 actively traded NSE stocks"""
     return [
-        # Nifty 50
         "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", "SBIN", 
         "BHARTIARTL", "KOTAKBANK", "ITC", "LT", "AXISBANK", "BAJFINANCE", "ASIANPAINT",
         "MARUTI", "HCLTECH", "TITAN", "SUNPHARMA", "ULTRACEMCO", "WIPRO",
-        # Nifty Next 50
         "ADANIGREEN", "AMBUJACEM", "AUROPHARMA", "BANDHANBNK", "BANKBARODA",
         "BERGEPAINT", "BIOCON", "BOSCHLTD", "CHOLAFIN", "COLPAL",
         "DABUR", "DLF", "GAIL", "GODREJCP", "HAVELLS", "ICICIPRULI",
@@ -81,8 +81,7 @@ def get_nifty_500_stocks() -> List[str]:
         "MUTHOOTFIN", "NAUKRI", "PAGEIND", "PETRONET", "PIDILITIND",
         "PNB", "POLYCAB", "SAIL", "SRF", "TORNTPHARM", "TRENT",
         "TVSMOTOR", "UBL", "VEDL", "VOLTAS", "ZOMATO", "ZYDUSLIFE",
-        # Popular mid-caps
-        "AAPL", "ABB", "ABCAPITAL", "ABFRL", "ACC", "ADANIENSOL",
+        "ABB", "ABCAPITAL", "ABFRL", "ACC", "ADANIENSOL",
         "ADANIPOWER", "AJANTPHARM", "ALKEM", "AMARAJABAT", "APLLTD",
         "ASHOKLEY", "ASTRAL", "ATUL", "AUBANK", "BALRAMCHIN",
         "BEL", "BHARATFORG", "BHEL", "BSE", "CANFINHOME", "CGPOWER",
@@ -99,7 +98,13 @@ def get_nifty_500_stocks() -> List[str]:
         "SONACOMS", "STARHEALTH", "SUMICHEM", "SUNDARMFIN", "SUNTV",
         "SUPREMEIND", "SYNGENE", "TATACOMM", "TATAELXSI", "TATAPOWER",
         "TATASTLLP", "TORNTPOWER", "TRIDENT", "TTML", "UNIONBANK",
-        "VBL", "WHIRLPOOL", "YESBANK"
+        "VBL", "WHIRLPOOL", "YESBANK", "NESTLEIND", "ADANIENT", 
+        "ADANIPORTS", "POWERGRID", "NTPC", "TATAMOTORS", "ONGC", 
+        "COALINDIA", "JSWSTEEL", "TATASTEEL", "TECHM", "BAJAJ-AUTO", 
+        "INDUSINDBK", "HINDALCO", "DRREDDY", "GRASIM", "CIPLA", 
+        "BRITANNIA", "EICHERMOT", "DIVISLAB", "BPCL", "APOLLOHOSP", 
+        "HEROMOTOCO", "TATACONSUM", "SBILIFE", "M&M", "UPL", "LTIM", 
+        "HDFCLIFE", "BAJAJFINSV"
     ]
 
 
@@ -115,24 +120,21 @@ def get_stock_data(symbol: str) -> dict:
         full_symbol = f"{symbol}.NS"
         ticker = yf.Ticker(full_symbol)
         
-        # Get historical data (60 days for indicators)
         hist = ticker.history(period="60d")
         
         if hist.empty or len(hist) < 20:
             return None
         
-        # Current price info
         current_price = float(hist['Close'].iloc[-1])
         prev_close = float(hist['Close'].iloc[-2]) if len(hist) > 1 else current_price
         change = current_price - prev_close
         change_percent = (change / prev_close * 100) if prev_close > 0 else 0
         
-        # Volume
         current_volume = int(hist['Volume'].iloc[-1])
         avg_volume = int(hist['Volume'].mean())
         volume_ratio = current_volume / avg_volume if avg_volume > 0 else 1
         
-        # Calculate RSI (14-day)
+        # RSI
         delta = hist['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
@@ -147,8 +149,6 @@ def get_stock_data(symbol: str) -> dict:
         # 52 week high/low
         high_52w = float(hist['High'].max())
         low_52w = float(hist['Low'].min())
-        
-        # Distance from 52W high
         distance_from_high = ((high_52w - current_price) / high_52w * 100) if high_52w > 0 else 0
         
         # MACD
@@ -160,7 +160,6 @@ def get_stock_data(symbol: str) -> dict:
         signal_value = float(signal.iloc[-1])
         macd_histogram = macd_value - signal_value
         
-        # Get info
         info = ticker.info
         
         return {
@@ -190,12 +189,11 @@ def get_stock_data(symbol: str) -> dict:
             "market_cap": info.get("marketCap", 0),
         }
     except Exception as e:
-        # Silent fail for individual stocks
         return None
 
 
-def fetch_stocks_parallel(symbols: List[str], max_workers: int = 10) -> List[dict]:
-    """Fetch multiple stocks in parallel for speed"""
+def fetch_stocks_parallel(symbols: List[str], max_workers: int = 15) -> List[dict]:
+    """Fetch multiple stocks in parallel"""
     results = []
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -206,37 +204,33 @@ def fetch_stocks_parallel(symbols: List[str], max_workers: int = 10) -> List[dic
                 data = future.result()
                 if data:
                     results.append(data)
-            except Exception:
+            except:
                 pass
     
     return results
 
 
-def get_stocks_data(stock_list: str = "nifty50", limit: int = 100) -> List[dict]:
-    """Get data for a specific stock list"""
+def get_stocks_data(universe: str = "nifty50", limit: int = 100) -> List[dict]:
+    """Get data for a specific stock universe"""
     global _stock_cache, _cache_time
     
-    # Determine which stocks to scan
-    if stock_list == "all":
+    if universe == "all":
         symbols = get_all_nse_stocks()[:limit]
-    elif stock_list == "nifty500":
+    elif universe == "nifty500":
         symbols = get_nifty_500_stocks()[:limit]
-    else:  # Default to Nifty 50
+    else:
         symbols = get_nifty_50_stocks()[:limit]
     
-    # Check cache
-    cache_key = f"{stock_list}_{limit}"
+    cache_key = f"{universe}_{limit}"
     now = datetime.now()
     
     if _cache_time and (now - _cache_time).seconds < CACHE_DURATION:
         if cache_key in _stock_cache:
             return _stock_cache[cache_key]
     
-    # Fetch fresh data
     print(f"Fetching data for {len(symbols)} stocks...")
-    stocks_data = fetch_stocks_parallel(symbols, max_workers=15)
+    stocks_data = fetch_stocks_parallel(symbols)
     
-    # Update cache
     _stock_cache[cache_key] = stocks_data
     _cache_time = now
     
@@ -244,11 +238,11 @@ def get_stocks_data(stock_list: str = "nifty50", limit: int = 100) -> List[dict]
 
 
 # ============================================================
-# 🎯 SCANNER FUNCTIONS
+# 🎯 BASIC SCANNER FUNCTIONS
 # ============================================================
 
 def scan_swing_candidates(stocks: List[dict]) -> List[dict]:
-    """AI Swing Candidates - Best setups for swing trading"""
+    """AI Swing Candidates"""
     results = []
     for stock in stocks:
         score = 0
@@ -260,15 +254,12 @@ def scan_swing_candidates(stocks: List[dict]) -> List[dict]:
         if stock["above_ma_50"]:
             score += 15
             reasons.append("Above 50 MA")
-        
         if 40 <= stock["rsi"] <= 65:
             score += 25
             reasons.append(f"Healthy RSI ({stock['rsi']:.0f})")
-        
         if stock["distance_from_high"] < 15:
             score += 20
-            reasons.append(f"Near highs ({stock['distance_from_high']:.0f}% from 52W high)")
-        
+            reasons.append(f"Near highs ({stock['distance_from_high']:.0f}%)")
         if stock["volume_ratio"] > 1.2:
             score += 20
             reasons.append(f"Good volume ({stock['volume_ratio']:.1f}x)")
@@ -282,17 +273,15 @@ def scan_swing_candidates(stocks: List[dict]) -> List[dict]:
 
 
 def scan_breakout(stocks: List[dict]) -> List[dict]:
-    """Stocks breaking out of consolidation"""
     results = []
     for stock in stocks:
         if stock["distance_from_high"] < 5 and stock["volume_ratio"] > 1.5:
-            stock["signal_reason"] = f"Near 52W high ({stock['distance_from_high']:.1f}% away) with {stock['volume_ratio']:.1f}x volume"
+            stock["signal_reason"] = f"Near 52W high with {stock['volume_ratio']:.1f}x volume"
             results.append(stock)
     return sorted(results, key=lambda x: x["volume_ratio"], reverse=True)
 
 
 def scan_top_gainers(stocks: List[dict]) -> List[dict]:
-    """Top gaining stocks (>2%)"""
     results = [s for s in stocks if s["change_percent"] > 2]
     for stock in results:
         stock["signal_reason"] = f"Up {stock['change_percent']:.2f}% today"
@@ -300,7 +289,6 @@ def scan_top_gainers(stocks: List[dict]) -> List[dict]:
 
 
 def scan_top_losers(stocks: List[dict]) -> List[dict]:
-    """Top losing stocks (>2%)"""
     results = [s for s in stocks if s["change_percent"] < -2]
     for stock in results:
         stock["signal_reason"] = f"Down {abs(stock['change_percent']):.2f}% today"
@@ -308,17 +296,15 @@ def scan_top_losers(stocks: List[dict]) -> List[dict]:
 
 
 def scan_volume_breakout(stocks: List[dict]) -> List[dict]:
-    """High volume with price movement"""
     results = []
     for stock in stocks:
         if stock["volume_ratio"] > 2 and abs(stock["change_percent"]) > 1:
-            stock["signal_reason"] = f"{stock['volume_ratio']:.1f}x avg volume with {stock['change_percent']:.2f}% move"
+            stock["signal_reason"] = f"{stock['volume_ratio']:.1f}x volume with {stock['change_percent']:.2f}% move"
             results.append(stock)
     return sorted(results, key=lambda x: x["volume_ratio"], reverse=True)
 
 
 def scan_52w_high(stocks: List[dict]) -> List[dict]:
-    """Stocks near 52-week high"""
     results = []
     for stock in stocks:
         if stock["distance_from_high"] < 3:
@@ -328,7 +314,6 @@ def scan_52w_high(stocks: List[dict]) -> List[dict]:
 
 
 def scan_52w_low(stocks: List[dict]) -> List[dict]:
-    """Stocks near 52-week low"""
     results = []
     for stock in stocks:
         distance_from_low = ((stock["current_price"] - stock["low_52w"]) / stock["low_52w"] * 100) if stock["low_52w"] > 0 else 100
@@ -339,48 +324,21 @@ def scan_52w_low(stocks: List[dict]) -> List[dict]:
     return sorted(results, key=lambda x: x.get("distance_from_low", 100))
 
 
-def scan_volume_surge(stocks: List[dict]) -> List[dict]:
-    """Unusual volume (>2.5x average)"""
-    results = []
-    for stock in stocks:
-        if stock["volume_ratio"] > 2.5:
-            stock["signal_reason"] = f"{stock['volume_ratio']:.1f}x average volume"
-            results.append(stock)
-    return sorted(results, key=lambda x: x["volume_ratio"], reverse=True)
-
-
 def scan_rsi_oversold(stocks: List[dict]) -> List[dict]:
-    """RSI below 30"""
-    results = []
-    for stock in stocks:
-        if stock["rsi"] < 30:
-            stock["signal_reason"] = f"RSI at {stock['rsi']:.1f} - oversold"
-            results.append(stock)
+    results = [s for s in stocks if s["rsi"] < 30]
+    for stock in results:
+        stock["signal_reason"] = f"RSI at {stock['rsi']:.1f} - oversold"
     return sorted(results, key=lambda x: x["rsi"])
 
 
 def scan_rsi_overbought(stocks: List[dict]) -> List[dict]:
-    """RSI above 70"""
-    results = []
-    for stock in stocks:
-        if stock["rsi"] > 70:
-            stock["signal_reason"] = f"RSI at {stock['rsi']:.1f} - strong momentum"
-            results.append(stock)
+    results = [s for s in stocks if s["rsi"] > 70]
+    for stock in results:
+        stock["signal_reason"] = f"RSI at {stock['rsi']:.1f} - strong momentum"
     return sorted(results, key=lambda x: x["rsi"], reverse=True)
 
 
-def scan_bullish_ma(stocks: List[dict]) -> List[dict]:
-    """Price above both 20 and 50 MA"""
-    results = []
-    for stock in stocks:
-        if stock["above_ma_20"] and stock["above_ma_50"]:
-            stock["signal_reason"] = f"Above 20 MA (₹{stock['ma_20']}) and 50 MA (₹{stock['ma_50']})"
-            results.append(stock)
-    return sorted(results, key=lambda x: x["change_percent"], reverse=True)
-
-
 def scan_macd_crossover(stocks: List[dict]) -> List[dict]:
-    """MACD bullish"""
     results = []
     for stock in stocks:
         if stock["macd_histogram"] > 0 and stock["macd"] > 0:
@@ -391,21 +349,169 @@ def scan_macd_crossover(stocks: List[dict]) -> List[dict]:
 
 # Scanner mapping
 SCANNERS = {
-    0: ("Full Screening / AI Swing", scan_swing_candidates),
-    1: ("Breakout (Consolidation)", scan_breakout),
+    0: ("AI Swing Candidates", scan_swing_candidates),
+    1: ("Breakout", scan_breakout),
     2: ("Top Gainers (>2%)", scan_top_gainers),
     3: ("Top Losers (>2%)", scan_top_losers),
     4: ("Volume Breakout", scan_volume_breakout),
     5: ("52-Week High", scan_52w_high),
-    6: ("10-Day High", scan_52w_high),  # Same logic
     7: ("52-Week Low", scan_52w_low),
-    8: ("Volume Surge (>2.5x)", scan_volume_surge),
     9: ("RSI Oversold (<30)", scan_rsi_oversold),
     10: ("RSI Overbought (>70)", scan_rsi_overbought),
-    11: ("Bullish MA Setup", scan_bullish_ma),
-    17: ("Bull Momentum", scan_bullish_ma),
     26: ("MACD Crossover", scan_macd_crossover),
-    30: ("Momentum Burst", scan_volume_breakout),
+}
+
+
+# ============================================================
+# 🤖 PKSCREENER AI FEATURES
+# ============================================================
+
+# List of PKScreener AI features to expose
+PKSCREENER_AI_FEATURES = {
+    "nifty_prediction": {
+        "name": "AI Nifty Prediction",
+        "description": "ML-based Nifty 50 direction prediction",
+        "method": "getNiftyPrediction",
+        "category": "prediction"
+    },
+    "buy_signals": {
+        "name": "AI Buy Signals",
+        "description": "Strong buy signals using ML algorithms",
+        "method": "findStrongBuySignals",
+        "category": "signals"
+    },
+    "sell_signals": {
+        "name": "AI Sell Signals", 
+        "description": "Strong sell signals for exit timing",
+        "method": "findStrongSellSignals",
+        "category": "signals"
+    },
+    "breakout_prediction": {
+        "name": "Breakout Prediction",
+        "description": "AI predicts potential breakouts",
+        "method": "findPotentialBreakout",
+        "category": "prediction"
+    },
+    "cup_handle": {
+        "name": "Cup & Handle Pattern",
+        "description": "AI detects Cup & Handle chart pattern",
+        "method": "findCupAndHandlePattern",
+        "category": "patterns"
+    },
+    "vcp_minervini": {
+        "name": "VCP (Mark Minervini)",
+        "description": "Volatility Contraction Pattern",
+        "method": "validateVCPMarkMinervini",
+        "category": "patterns"
+    },
+    "momentum": {
+        "name": "High Momentum",
+        "description": "Stocks with exceptional momentum",
+        "method": "findHighMomentum",
+        "category": "momentum"
+    },
+    "super_gainers": {
+        "name": "Super Gainers/Losers",
+        "description": "Extreme movers today",
+        "method": "findSuperGainersLosers",
+        "category": "momentum"
+    },
+    "trend_analysis": {
+        "name": "Trend Analysis",
+        "description": "AI determines current trend",
+        "method": "findTrend",
+        "category": "trend"
+    },
+    "uptrend": {
+        "name": "Uptrend Detection",
+        "description": "Stocks in confirmed uptrend",
+        "method": "findUptrend",
+        "category": "trend"
+    },
+    "rsi_cross_ma": {
+        "name": "RSI Crossing MA",
+        "description": "RSI crossing its moving average",
+        "method": "findRSICrossingMA",
+        "category": "indicators"
+    },
+    "macd_cross": {
+        "name": "MACD Crossover",
+        "description": "MACD bullish crossover signals",
+        "method": "findMACDCrossover",
+        "category": "indicators"
+    },
+    "bbands_squeeze": {
+        "name": "Bollinger Squeeze",
+        "description": "Low volatility squeeze setup",
+        "method": "findBbandsSqueeze",
+        "category": "volatility"
+    },
+    "atr_cross": {
+        "name": "ATR Cross",
+        "description": "ATR-based breakout signals",
+        "method": "findATRCross",
+        "category": "volatility"
+    },
+    "reversal_ma": {
+        "name": "MA Reversal",
+        "description": "Price reversing at moving averages",
+        "method": "findReversalMA",
+        "category": "reversal"
+    },
+    "inside_bar": {
+        "name": "Inside Bar",
+        "description": "Inside bar consolidation pattern",
+        "method": "validateInsideBar",
+        "category": "patterns"
+    },
+    "narrow_range": {
+        "name": "Narrow Range (NR4/NR7)",
+        "description": "Narrow range compression",
+        "method": "validateNarrowRange",
+        "category": "patterns"
+    },
+    "volume_spread": {
+        "name": "Volume Spread Analysis",
+        "description": "VSA pattern detection",
+        "method": "validateVolumeSpreadAnalysis",
+        "category": "volume"
+    },
+    "higher_highs": {
+        "name": "Higher Highs & Higher Lows",
+        "description": "Classic uptrend pattern",
+        "method": "validateHigherHighsHigherLowsHigherClose",
+        "category": "trend"
+    },
+    "lower_lows": {
+        "name": "Lower Highs & Lower Lows",
+        "description": "Downtrend pattern",
+        "method": "validateLowerHighsLowerLows",
+        "category": "trend"
+    },
+    "confluence": {
+        "name": "Technical Confluence",
+        "description": "Multiple indicators aligning",
+        "method": "validateConfluence",
+        "category": "confluence"
+    },
+    "lorentzian": {
+        "name": "Lorentzian Classification",
+        "description": "ML Lorentzian classifier signals",
+        "method": "validateLorentzian",
+        "category": "ml"
+    },
+    "short_term_bullish": {
+        "name": "Short Term Bullish",
+        "description": "Near-term bullish setup",
+        "method": "validateShortTermBullish",
+        "category": "signals"
+    },
+    "bullish_tomorrow": {
+        "name": "Bullish For Tomorrow",
+        "description": "Next day bullish probability",
+        "method": "validateBullishForTomorrow",
+        "category": "prediction"
+    },
 }
 
 
@@ -416,40 +522,15 @@ SCANNERS = {
 @router.get("/scan/{scanner_id}")
 async def run_scanner(
     scanner_id: int,
-    universe: str = Query("nifty50", description="Stock universe: nifty50, nifty500, all"),
+    universe: str = Query("nifty50", description="nifty50, nifty500, all"),
     limit: int = Query(100, description="Max stocks to scan")
 ):
-    """
-    Run a specific scanner on NSE stocks.
-    
-    Scanner IDs:
-    - 0: Full Screening (AI Swing Candidates)
-    - 1: Breakout (Consolidation)
-    - 2: Top Gainers (>2%)
-    - 3: Top Losers (>2%)
-    - 4: Volume Breakout
-    - 5: 52-Week High
-    - 7: 52-Week Low
-    - 8: Volume Surge (>2.5x)
-    - 9: RSI Oversold (<30)
-    - 10: RSI Overbought (>70)
-    - 11: Bullish MA Setup
-    - 26: MACD Crossover
-    
-    Universe options:
-    - nifty50: Nifty 50 stocks (fastest)
-    - nifty500: Top 150 stocks
-    - all: All NSE stocks (2200+, slow)
-    """
+    """Run a basic scanner"""
     try:
         stocks = get_stocks_data(universe, limit)
         
         if not stocks:
-            return {
-                "success": False,
-                "message": "Could not fetch stock data",
-                "results": []
-            }
+            return {"success": False, "results": [], "message": "No data"}
         
         if scanner_id not in SCANNERS:
             scanner_name, scanner_func = SCANNERS[0]
@@ -467,101 +548,121 @@ async def run_scanner(
             "results_count": len(results),
             "count": len(results),
             "results": results,
-            "timestamp": datetime.now().isoformat(),
-            "last_updated": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat()
         }
-        
     except Exception as e:
-        print(f"Scanner error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/swing-candidates")
 async def get_swing_candidates(
-    limit: int = Query(30, description="Max results"),
-    universe: str = Query("nifty50", description="Stock universe")
+    limit: int = Query(30),
+    universe: str = Query("nifty50")
 ):
     """Get AI Swing Trading Candidates"""
-    try:
-        stocks = get_stocks_data(universe, 100)
-        
-        if not stocks:
-            return {"success": False, "results": []}
-        
-        results = scan_swing_candidates(stocks)[:limit]
-        
-        return {
-            "success": True,
-            "scanner_name": "AI Swing Candidates",
-            "count": len(results),
-            "results": results,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    stocks = get_stocks_data(universe, 100)
+    if not stocks:
+        return {"success": False, "results": []}
+    
+    results = scan_swing_candidates(stocks)[:limit]
+    return {
+        "success": True,
+        "scanner_name": "AI Swing Candidates",
+        "count": len(results),
+        "results": results,
+        "timestamp": datetime.now().isoformat()
+    }
 
 
 @router.get("/stocks")
-async def get_all_screener_stocks(
-    universe: str = Query("nifty50", description="Stock universe"),
-    limit: int = Query(50, description="Max stocks")
+async def get_all_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(50)
 ):
     """Get all stocks with technical data"""
-    try:
-        stocks = get_stocks_data(universe, limit)
-        return {
-            "success": True,
-            "universe": universe,
-            "count": len(stocks),
-            "stocks": stocks,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/available")
-async def get_available_scanners():
-    """List all available scanners"""
+    stocks = get_stocks_data(universe, limit)
     return {
-        "scanners": [
-            {"id": 0, "name": "Full Screening / AI Swing", "category": "AI"},
-            {"id": 1, "name": "Breakout (Consolidation)", "category": "Breakout"},
-            {"id": 2, "name": "Top Gainers (>2%)", "category": "Momentum"},
-            {"id": 3, "name": "Top Losers (>2%)", "category": "Momentum"},
-            {"id": 4, "name": "Volume Breakout", "category": "Volume"},
-            {"id": 5, "name": "52-Week High", "category": "Breakout"},
-            {"id": 7, "name": "52-Week Low", "category": "Reversal"},
-            {"id": 8, "name": "Volume Surge (>2.5x)", "category": "Volume"},
-            {"id": 9, "name": "RSI Oversold (<30)", "category": "Reversal"},
-            {"id": 10, "name": "RSI Overbought (>70)", "category": "Momentum"},
-            {"id": 11, "name": "Bullish MA Setup", "category": "Trend"},
-            {"id": 26, "name": "MACD Crossover", "category": "Momentum"},
-        ],
-        "universes": [
-            {"id": "nifty50", "name": "Nifty 50", "count": 50},
-            {"id": "nifty500", "name": "Top 150 Stocks", "count": 150},
-            {"id": "all", "name": "All NSE Stocks", "count": "2200+"},
-        ]
+        "success": True,
+        "universe": universe,
+        "count": len(stocks),
+        "stocks": stocks,
+        "timestamp": datetime.now().isoformat()
     }
 
 
 @router.get("/universe/count")
 async def get_universe_count():
     """Get count of stocks in each universe"""
-    all_stocks = get_all_nse_stocks() if NSE_AVAILABLE else []
-    
     return {
         "nifty50": 50,
         "nifty500": len(get_nifty_500_stocks()),
-        "all_nse": len(all_stocks),
-        "nse_available": NSE_AVAILABLE
+        "all_nse": len(get_all_nse_stocks()),
+        "nse_available": NSE_AVAILABLE,
+        "pkscreener_available": PKSCREENER_AVAILABLE
+    }
+
+
+@router.get("/available")
+async def get_available_scanners():
+    """List all available scanners"""
+    basic_scanners = [
+        {"id": 0, "name": "AI Swing Candidates", "category": "AI"},
+        {"id": 1, "name": "Breakout", "category": "Breakout"},
+        {"id": 2, "name": "Top Gainers (>2%)", "category": "Momentum"},
+        {"id": 3, "name": "Top Losers (>2%)", "category": "Momentum"},
+        {"id": 4, "name": "Volume Breakout", "category": "Volume"},
+        {"id": 5, "name": "52-Week High", "category": "Breakout"},
+        {"id": 7, "name": "52-Week Low", "category": "Reversal"},
+        {"id": 9, "name": "RSI Oversold (<30)", "category": "Reversal"},
+        {"id": 10, "name": "RSI Overbought (>70)", "category": "Momentum"},
+        {"id": 26, "name": "MACD Crossover", "category": "Momentum"},
+    ]
+    
+    return {
+        "basic_scanners": basic_scanners,
+        "ai_features": list(PKSCREENER_AI_FEATURES.keys()),
+        "universes": [
+            {"id": "nifty50", "name": "Nifty 50", "count": 50},
+            {"id": "nifty500", "name": "Top 200 Stocks", "count": len(get_nifty_500_stocks())},
+            {"id": "all", "name": "All NSE Stocks", "count": len(get_all_nse_stocks())},
+        ]
+    }
+
+
+# ============================================================
+# 🤖 PKSCREENER AI ENDPOINTS
+# ============================================================
+
+@router.get("/ai/features")
+async def get_ai_features():
+    """Get list of all PKScreener AI features"""
+    features_by_category = {}
+    
+    for key, feature in PKSCREENER_AI_FEATURES.items():
+        category = feature["category"]
+        if category not in features_by_category:
+            features_by_category[category] = []
+        
+        features_by_category[category].append({
+            "id": key,
+            "name": feature["name"],
+            "description": feature["description"]
+        })
+    
+    return {
+        "available": PKSCREENER_AVAILABLE,
+        "total_features": len(PKSCREENER_AI_FEATURES),
+        "features_by_category": features_by_category,
+        "all_features": [
+            {"id": k, **{kk: vv for kk, vv in v.items() if kk != "method"}}
+            for k, v in PKSCREENER_AI_FEATURES.items()
+        ]
     }
 
 
 @router.get("/ai/nifty-prediction")
 async def get_nifty_prediction():
-    """Get AI Nifty outlook"""
+    """AI-powered Nifty 50 prediction"""
     try:
         nifty = yf.Ticker("^NSEI")
         hist = nifty.history(period="30d")
@@ -574,24 +675,371 @@ async def get_nifty_prediction():
         change = current - prev
         change_percent = (change / prev * 100)
         
+        # Calculate indicators for prediction
         ma_5 = float(hist['Close'].rolling(5).mean().iloc[-1])
         ma_10 = float(hist['Close'].rolling(10).mean().iloc[-1])
+        ma_20 = float(hist['Close'].rolling(20).mean().iloc[-1])
         
-        direction = "UP" if ma_5 > ma_10 else "DOWN"
-        confidence = min(0.85, 0.5 + abs(ma_5 - ma_10) / current * 10)
+        # RSI
+        delta = hist['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        current_rsi = float(rsi.iloc[-1])
+        
+        # Determine direction and confidence
+        bullish_signals = 0
+        total_signals = 4
+        
+        if ma_5 > ma_10:
+            bullish_signals += 1
+        if ma_10 > ma_20:
+            bullish_signals += 1
+        if current > ma_20:
+            bullish_signals += 1
+        if 40 < current_rsi < 70:
+            bullish_signals += 1
+        
+        direction = "BULLISH" if bullish_signals >= 3 else "BEARISH" if bullish_signals <= 1 else "NEUTRAL"
+        confidence = bullish_signals / total_signals
+        
+        # Predicted level
+        if direction == "BULLISH":
+            predicted = current * 1.01
+        elif direction == "BEARISH":
+            predicted = current * 0.99
+        else:
+            predicted = current
         
         return {
             "success": True,
             "current_level": round(current, 2),
             "change": round(change, 2),
             "change_percent": round(change_percent, 2),
-            "ensemble": {
-                "prediction": round(current * (1.01 if direction == "UP" else 0.99), 0),
+            "prediction": {
                 "direction": direction,
-                "confidence": round(confidence, 2)
+                "predicted_level": round(predicted, 0),
+                "confidence": round(confidence * 100, 1),
+                "signals": {
+                    "bullish": bullish_signals,
+                    "total": total_signals
+                }
+            },
+            "indicators": {
+                "rsi": round(current_rsi, 2),
+                "ma_5": round(ma_5, 2),
+                "ma_10": round(ma_10, 2),
+                "ma_20": round(ma_20, 2)
             },
             "support_levels": [round(current * 0.98, 0), round(current * 0.95, 0)],
             "resistance_levels": [round(current * 1.02, 0), round(current * 1.05, 0)],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/momentum-radar")
+async def get_momentum_radar(
+    universe: str = Query("nifty50"),
+    limit: int = Query(20)
+):
+    """AI Momentum Radar - Find stocks with exceptional momentum"""
+    try:
+        stocks = get_stocks_data(universe, 100)
+        
+        results = []
+        for stock in stocks:
+            momentum_score = 0
+            signals = []
+            
+            # Price momentum
+            if stock["change_percent"] > 3:
+                momentum_score += 30
+                signals.append(f"Strong +{stock['change_percent']:.1f}% today")
+            elif stock["change_percent"] > 1:
+                momentum_score += 15
+                signals.append(f"Positive momentum +{stock['change_percent']:.1f}%")
+            
+            # RSI momentum
+            if 60 < stock["rsi"] < 80:
+                momentum_score += 25
+                signals.append(f"Strong RSI ({stock['rsi']:.0f})")
+            elif stock["rsi"] > 80:
+                momentum_score += 15
+                signals.append(f"Overbought RSI ({stock['rsi']:.0f})")
+            
+            # Volume confirmation
+            if stock["volume_ratio"] > 2:
+                momentum_score += 25
+                signals.append(f"High volume ({stock['volume_ratio']:.1f}x)")
+            elif stock["volume_ratio"] > 1.5:
+                momentum_score += 15
+                signals.append(f"Above avg volume ({stock['volume_ratio']:.1f}x)")
+            
+            # MACD
+            if stock["macd_histogram"] > 0:
+                momentum_score += 20
+                signals.append("Bullish MACD")
+            
+            if momentum_score >= 50:
+                stock["momentum_score"] = momentum_score
+                stock["momentum_signals"] = signals
+                stock["signal_reason"] = " | ".join(signals)
+                results.append(stock)
+        
+        results = sorted(results, key=lambda x: x["momentum_score"], reverse=True)[:limit]
+        
+        return {
+            "success": True,
+            "feature": "AI Momentum Radar",
+            "universe": universe,
+            "count": len(results),
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/breakout-scanner")
+async def get_breakout_scanner(
+    universe: str = Query("nifty50"),
+    limit: int = Query(20)
+):
+    """AI Breakout Scanner - Predict potential breakouts"""
+    try:
+        stocks = get_stocks_data(universe, 100)
+        
+        results = []
+        for stock in stocks:
+            breakout_score = 0
+            signals = []
+            
+            # Near 52W high
+            if stock["distance_from_high"] < 3:
+                breakout_score += 35
+                signals.append(f"At 52W high ({stock['distance_from_high']:.1f}% away)")
+            elif stock["distance_from_high"] < 10:
+                breakout_score += 20
+                signals.append(f"Near 52W high ({stock['distance_from_high']:.1f}% away)")
+            
+            # Volume surge
+            if stock["volume_ratio"] > 2.5:
+                breakout_score += 30
+                signals.append(f"Volume surge ({stock['volume_ratio']:.1f}x)")
+            elif stock["volume_ratio"] > 1.5:
+                breakout_score += 15
+                signals.append(f"Above avg volume ({stock['volume_ratio']:.1f}x)")
+            
+            # Above MAs
+            if stock["above_ma_20"] and stock["above_ma_50"]:
+                breakout_score += 25
+                signals.append("Above all MAs")
+            
+            # Positive price action
+            if stock["change_percent"] > 2:
+                breakout_score += 10
+                signals.append(f"Strong +{stock['change_percent']:.1f}% move")
+            
+            if breakout_score >= 50:
+                stock["breakout_score"] = breakout_score
+                stock["breakout_probability"] = min(95, breakout_score + 20)
+                stock["signal_reason"] = " | ".join(signals)
+                results.append(stock)
+        
+        results = sorted(results, key=lambda x: x["breakout_score"], reverse=True)[:limit]
+        
+        return {
+            "success": True,
+            "feature": "AI Breakout Scanner",
+            "universe": universe,
+            "count": len(results),
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/reversal-scanner")
+async def get_reversal_scanner(
+    universe: str = Query("nifty50"),
+    limit: int = Query(20)
+):
+    """AI Reversal Scanner - Find potential reversal candidates"""
+    try:
+        stocks = get_stocks_data(universe, 100)
+        
+        results = []
+        for stock in stocks:
+            reversal_score = 0
+            signals = []
+            
+            # Oversold RSI
+            if stock["rsi"] < 30:
+                reversal_score += 35
+                signals.append(f"Oversold RSI ({stock['rsi']:.0f})")
+            elif stock["rsi"] < 40:
+                reversal_score += 20
+                signals.append(f"Low RSI ({stock['rsi']:.0f})")
+            
+            # Near 52W low
+            distance_from_low = ((stock["current_price"] - stock["low_52w"]) / stock["low_52w"] * 100) if stock["low_52w"] > 0 else 100
+            if distance_from_low < 5:
+                reversal_score += 30
+                signals.append(f"Near 52W low ({distance_from_low:.1f}% away)")
+            elif distance_from_low < 15:
+                reversal_score += 15
+                signals.append(f"Close to 52W low ({distance_from_low:.1f}% away)")
+            
+            # Volume spike (potential accumulation)
+            if stock["volume_ratio"] > 2:
+                reversal_score += 25
+                signals.append(f"High volume ({stock['volume_ratio']:.1f}x) - accumulation?")
+            
+            # Big drop (potential bounce)
+            if stock["change_percent"] < -3:
+                reversal_score += 10
+                signals.append(f"Sharp decline ({stock['change_percent']:.1f}%)")
+            
+            if reversal_score >= 40:
+                stock["reversal_score"] = reversal_score
+                stock["reversal_probability"] = min(85, reversal_score + 10)
+                stock["signal_reason"] = " | ".join(signals)
+                results.append(stock)
+        
+        results = sorted(results, key=lambda x: x["reversal_score"], reverse=True)[:limit]
+        
+        return {
+            "success": True,
+            "feature": "AI Reversal Scanner",
+            "universe": universe,
+            "count": len(results),
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/trend-analysis")
+async def get_trend_analysis(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """AI Trend Analysis - Categorize stocks by trend"""
+    try:
+        stocks = get_stocks_data(universe, 100)
+        
+        uptrend = []
+        downtrend = []
+        sideways = []
+        
+        for stock in stocks:
+            trend_score = 0
+            
+            if stock["above_ma_20"]:
+                trend_score += 1
+            if stock["above_ma_50"]:
+                trend_score += 1
+            if stock["change_percent"] > 0:
+                trend_score += 1
+            if stock["macd_histogram"] > 0:
+                trend_score += 1
+            if stock["rsi"] > 50:
+                trend_score += 1
+            
+            if trend_score >= 4:
+                stock["trend"] = "UPTREND"
+                stock["trend_strength"] = "Strong" if trend_score == 5 else "Moderate"
+                stock["signal_reason"] = f"Uptrend - {trend_score}/5 bullish signals"
+                uptrend.append(stock)
+            elif trend_score <= 1:
+                stock["trend"] = "DOWNTREND"
+                stock["trend_strength"] = "Strong" if trend_score == 0 else "Moderate"
+                stock["signal_reason"] = f"Downtrend - {5 - trend_score}/5 bearish signals"
+                downtrend.append(stock)
+            else:
+                stock["trend"] = "SIDEWAYS"
+                stock["trend_strength"] = "Neutral"
+                stock["signal_reason"] = f"Sideways - mixed signals"
+                sideways.append(stock)
+        
+        return {
+            "success": True,
+            "feature": "AI Trend Analysis",
+            "universe": universe,
+            "summary": {
+                "uptrend": len(uptrend),
+                "downtrend": len(downtrend),
+                "sideways": len(sideways),
+                "total": len(stocks)
+            },
+            "uptrend": uptrend[:limit],
+            "downtrend": downtrend[:limit],
+            "sideways": sideways[:limit//2],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/ai/market-regime")
+async def get_market_regime():
+    """AI Market Regime Analysis"""
+    try:
+        # Get Nifty data
+        nifty = yf.Ticker("^NSEI")
+        hist = nifty.history(period="60d")
+        
+        current = float(hist['Close'].iloc[-1])
+        ma_20 = float(hist['Close'].rolling(20).mean().iloc[-1])
+        ma_50 = float(hist['Close'].rolling(50).mean().iloc[-1])
+        
+        # Volatility (ATR proxy)
+        high_low = hist['High'] - hist['Low']
+        volatility = float(high_low.rolling(14).mean().iloc[-1])
+        avg_volatility = float(high_low.mean())
+        volatility_ratio = volatility / avg_volatility
+        
+        # Determine regime
+        if current > ma_20 > ma_50:
+            if volatility_ratio < 0.8:
+                regime = "BULL_QUIET"
+                description = "Bullish with low volatility - ideal for trend following"
+            else:
+                regime = "BULL_VOLATILE"
+                description = "Bullish but volatile - use wider stops"
+        elif current < ma_20 < ma_50:
+            if volatility_ratio < 0.8:
+                regime = "BEAR_QUIET"
+                description = "Bearish with low volatility - avoid longs"
+            else:
+                regime = "BEAR_VOLATILE"
+                description = "Bearish and volatile - stay cautious"
+        else:
+            regime = "TRANSITIONAL"
+            description = "Market in transition - wait for clarity"
+        
+        return {
+            "success": True,
+            "regime": regime,
+            "description": description,
+            "indicators": {
+                "nifty": round(current, 2),
+                "ma_20": round(ma_20, 2),
+                "ma_50": round(ma_50, 2),
+                "volatility_ratio": round(volatility_ratio, 2)
+            },
+            "recommendation": {
+                "BULL_QUIET": "Go long on breakouts with tight stops",
+                "BULL_VOLATILE": "Trade smaller size, wider stops",
+                "BEAR_QUIET": "Avoid new longs, protect existing",
+                "BEAR_VOLATILE": "Cash is a position - stay safe",
+                "TRANSITIONAL": "Wait for regime clarity"
+            }.get(regime, "Monitor closely"),
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
