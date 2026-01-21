@@ -393,6 +393,39 @@ async def get_screener_stocks():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/swing-candidates")
+async def get_swing_candidates(limit: int = 30):
+    """
+    Get AI Swing Trading Candidates.
+    
+    This is the main AI-powered scanner that identifies
+    the best stocks for swing trading based on multiple factors.
+    """
+    try:
+        stocks = get_all_stocks_data()
+        
+        if not stocks:
+            return {
+                "success": False,
+                "message": "Could not fetch stock data",
+                "results": []
+            }
+        
+        results = scan_swing_candidates(stocks)[:limit]
+        
+        return {
+            "success": True,
+            "scanner_name": "AI Swing Candidates",
+            "count": len(results),
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        print(f"Swing candidates error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/ai/nifty-prediction")
 async def get_nifty_prediction():
     """Get AI Nifty outlook"""
