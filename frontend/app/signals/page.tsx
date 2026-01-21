@@ -218,22 +218,14 @@ export default function SignalsPage() {
               <div className="border-b border-border/30 bg-background-surface/50 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                      signal.direction === 'LONG' ? 'bg-success/15' : 'bg-danger/15'
-                    }`}>
-                      {signal.direction === 'LONG' ? (
-                        <TrendingUp className="h-5 w-5 text-success" />
-                      ) : (
-                        <TrendingDown className="h-5 w-5 text-danger" />
-                      )}
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/15">
+                      <TrendingUp className="h-5 w-5 text-success" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-text-primary">{signal.symbol}</span>
-                        <span className={`rounded px-2 py-0.5 text-xs font-bold ${
-                          signal.direction === 'LONG' ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'
-                        }`}>
-                          {signal.direction}
+                        <span className="rounded px-2 py-0.5 text-xs font-bold bg-success/15 text-success">
+                          BUY
                         </span>
                         <span className={`rounded px-2 py-0.5 text-xs font-medium ${
                           signal.status === 'active' ? 'bg-accent/15 text-accent' :
