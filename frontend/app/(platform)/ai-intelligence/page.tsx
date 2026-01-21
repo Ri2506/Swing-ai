@@ -35,7 +35,9 @@ interface StockResult {
   ai_score?: number
   momentum_score?: number
   breakout_score?: number
+  breakout_probability?: number
   reversal_score?: number
+  reversal_probability?: number
   trend?: string
 }
 
