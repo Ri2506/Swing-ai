@@ -9,7 +9,6 @@ BEGINNER TIP:
 """
 
 import os
-from supabase import create_client, Client
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -19,8 +18,17 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+# Try to import supabase, handle gracefully if not available
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Supabase import error: {e}")
+    SUPABASE_AVAILABLE = False
+    Client = None
+
 # Create Supabase client (this connects to your database)
-supabase: Client = None
+supabase = None
 
 def get_supabase() -> Client:
     """
