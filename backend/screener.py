@@ -102,6 +102,8 @@ def get_stock_data(symbol: str) -> dict:
             "name": info.get("shortName", symbol),
             "sector": info.get("sector", "Unknown"),
             "current_price": round(current_price, 2),
+            "ltp": round(current_price, 2),  # Last Traded Price (for frontend)
+            "price": round(current_price, 2),  # Alias for frontend
             "change": round(change, 2),
             "change_percent": round(change_percent, 2),
             "volume": current_volume,
