@@ -38,6 +38,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
     { name: 'AI Screener', href: '/screener', icon: Sparkles },
     { name: 'Signals', href: '/signals', icon: Target },
     { name: 'Stocks', href: '/stocks', icon: TrendingUp },
+    { name: 'Tools', href: '/tools', icon: Calculator },
     { name: 'Portfolio', href: '/portfolio', icon: LineChart },
   ]
 

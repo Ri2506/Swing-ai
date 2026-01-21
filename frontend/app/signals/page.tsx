@@ -20,7 +20,7 @@ interface Signal {
   id: string
   symbol: string
   name: string
-  direction: 'LONG' | 'SHORT'
+  direction: 'LONG'
   entry_price: number
   target_price: number
   stop_loss: number
