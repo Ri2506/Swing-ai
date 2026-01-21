@@ -30,7 +30,7 @@ except ImportError as e:
 # Create Supabase client (this connects to your database)
 supabase = None
 
-def get_supabase() -> Client:
+def get_supabase():
     """
     Get the Supabase client.
     
@@ -46,14 +46,22 @@ def get_supabase() -> Client:
     """
     global supabase
     
+    if not SUPABASE_AVAILABLE:
+        print("⚠️ Supabase library not available")
+        return None
+    
     if supabase is None:
         if not SUPABASE_URL or not SUPABASE_KEY:
             print("⚠️ WARNING: Supabase credentials not found!")
             print("Please add SUPABASE_URL and SUPABASE_KEY to backend/.env")
             return None
         
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("✅ Connected to Supabase!")
+        try:
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+            print("✅ Connected to Supabase!")
+        except Exception as e:
+            print(f"⚠️ Supabase connection error: {e}")
+            return None
     
     return supabase
 
