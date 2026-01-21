@@ -6,7 +6,6 @@ import Link from 'next/link'
 import {
   Target,
   TrendingUp,
-  TrendingDown,
   ArrowUp,
   ArrowDown,
   Sparkles,
