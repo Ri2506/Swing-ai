@@ -67,6 +67,14 @@ try:
 except Exception as e:
     print(f"⚠️ User management endpoints not loaded: {e}")
 
+# 4. Screener Router (NEW!)
+try:
+    from screener import router as screener_router
+    app.include_router(screener_router, prefix="/api")
+    print("✅ Screener endpoints loaded")
+except Exception as e:
+    print(f"⚠️ Screener endpoints not loaded: {e}")
+
 # ============================================================
 # 📝 API DOCUMENTATION
 # ============================================================
