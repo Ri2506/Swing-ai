@@ -20,11 +20,15 @@ import numpy as np
 
 # Import nsepython for full NSE coverage
 try:
-    from nsepython import nse_eq_symbols, nse_get_index_list, nse_index_quote
+    from nsepython import nse_eq_symbols, nse_get_index_list, nse_get_index_quote
     NSE_AVAILABLE = True
-except ImportError:
+    print(f"✅ nsepython loaded - {len(nse_eq_symbols())} NSE stocks available")
+except ImportError as e:
     NSE_AVAILABLE = False
-    print("⚠️ nsepython not available - using limited stock list")
+    print(f"⚠️ nsepython not available: {e}")
+except Exception as e:
+    NSE_AVAILABLE = False
+    print(f"⚠️ nsepython error: {e}")
 
 router = APIRouter(prefix="/screener", tags=["Screener"])
 
