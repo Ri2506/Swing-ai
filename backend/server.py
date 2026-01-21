@@ -7,11 +7,15 @@ import os
 
 # Add the src directory to path
 sys.path.insert(0, '/app/src')
+sys.path.insert(0, '/app/backend')
 sys.path.insert(0, '/app')
 
-# For now, create a minimal FastAPI app until Supabase is configured
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI(
     title="SwingAI Trading API",
@@ -32,10 +36,14 @@ app.add_middleware(
 async def health_check():
     return {
         "status": "healthy",
-        "message": "SwingAI API is running. Configure Supabase credentials to enable full functionality."
+        "message": "SwingAI API is running!"
     }
 
-# Import market data router
+# ============================================================
+# 📦 LOAD ALL API ROUTERS
+# ============================================================
+
+# 1. Market Data Router (existing)
 try:
     from market_data import router as market_router
     app.include_router(market_router)
@@ -43,12 +51,52 @@ try:
 except Exception as e:
     print(f"⚠️ Market data endpoints not loaded: {e}")
 
-# Import and include the actual routes when Supabase is configured
+# 2. Paper Trading Router (NEW!)
 try:
-    from src.backend.api.app import app as full_app
-    # If successful, use the full app
-    app = full_app
-    print("✅ Full SwingAI API loaded")
+    from paper_trading import router as paper_router
+    app.include_router(paper_router, prefix="/api")
+    print("✅ Paper trading endpoints loaded")
 except Exception as e:
-    print(f"⚠️ Running in minimal mode: {e}")
-    print("   Configure SUPABASE_URL and SUPABASE_SERVICE_KEY to enable full API")
+    print(f"⚠️ Paper trading endpoints not loaded: {e}")
+
+# 3. Users Router (NEW!)
+try:
+    from users import router as users_router
+    app.include_router(users_router, prefix="/api")
+    print("✅ User management endpoints loaded")
+except Exception as e:
+    print(f"⚠️ User management endpoints not loaded: {e}")
+
+# ============================================================
+# 📝 API DOCUMENTATION
+# ============================================================
+
+@app.get("/api")
+async def api_info():
+    """List all available API endpoints"""
+    return {
+        "name": "SwingAI Trading API",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/api/health",
+            "market": {
+                "status": "/api/market/status",
+                "stocks": "/api/market/stocks",
+            },
+            "paper_trading": {
+                "portfolio": "/api/paper/portfolio/{user_id}",
+                "place_order": "/api/paper/order",
+                "orders": "/api/paper/orders/{user_id}",
+                "price": "/api/paper/price/{symbol}",
+                "reset": "/api/paper/reset/{user_id}",
+                "leaderboard": "/api/paper/leaderboard",
+            },
+            "users": {
+                "register": "/api/users/register",
+                "login": "/api/users/login",
+                "get_user": "/api/users/{user_id}",
+                "stats": "/api/users/{user_id}/stats",
+            }
+        }
+    }
+
