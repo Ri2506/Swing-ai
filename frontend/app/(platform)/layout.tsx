@@ -36,6 +36,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
     { name: 'AI Screener', href: '/screener', icon: Sparkles },
+    { name: 'AI Intelligence', href: '/ai-intelligence', icon: Brain },
     { name: 'Signals', href: '/signals', icon: Target },
     { name: 'Stocks', href: '/stocks', icon: TrendingUp },
     { name: 'Paper Trading', href: '/paper-trading', icon: Briefcase },
