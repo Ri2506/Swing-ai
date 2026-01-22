@@ -75,6 +75,14 @@ try:
 except Exception as e:
     print(f"⚠️ Screener endpoints not loaded: {e}")
 
+# 5. Auth Router (Google OAuth)
+try:
+    from auth import router as auth_router
+    app.include_router(auth_router, prefix="/api")
+    print("✅ Auth endpoints loaded")
+except Exception as e:
+    print(f"⚠️ Auth endpoints not loaded: {e}")
+
 # ============================================================
 # 📝 API DOCUMENTATION
 # ============================================================
