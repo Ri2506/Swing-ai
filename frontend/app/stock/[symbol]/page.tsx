@@ -65,30 +65,6 @@ function TradingViewWidget({ symbol }: { symbol: string }) {
       />
     </div>
   )
-    
-    const widgetContainer = document.createElement('div')
-    widgetContainer.className = 'tradingview-widget-container'
-    widgetContainer.style.height = '100%'
-    widgetContainer.style.width = '100%'
-    
-    const widgetDiv = document.createElement('div')
-    widgetDiv.className = 'tradingview-widget-container__widget'
-    widgetDiv.style.height = '100%'
-    widgetDiv.style.width = '100%'
-    
-    widgetContainer.appendChild(widgetDiv)
-    widgetContainer.appendChild(script)
-    containerRef.current.appendChild(widgetContainer)
-    
-  }, [symbol])
-  
-  return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full min-h-[500px]"
-      data-testid="tradingview-chart"
-    />
-  )
 }
 
 // Technical Indicator Card
