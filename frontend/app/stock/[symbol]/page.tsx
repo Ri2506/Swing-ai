@@ -169,9 +169,9 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       const data = await res.json()
       
       if (data.success && data.history?.length > 0) {
-        // Format for lightweight-charts - YYYY-MM-DD string
+        // Format for lightweight-charts - use Unix timestamp (seconds)
         const candles = data.history.map((item: any) => ({
-          time: item.date.split('T')[0],
+          time: Math.floor(new Date(item.date).getTime() / 1000),
           open: item.open,
           high: item.high,
           low: item.low,
@@ -179,7 +179,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         }))
         
         const volumes = data.history.map((item: any) => ({
-          time: item.date.split('T')[0],
+          time: Math.floor(new Date(item.date).getTime() / 1000),
           value: item.volume,
           color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
         }))
