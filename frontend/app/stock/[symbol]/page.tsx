@@ -168,24 +168,36 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${period}`)
       const data = await res.json()
       
+      console.log('Chart data received:', data.success, data.data_points)
+      
       if (data.success && data.history?.length > 0) {
-        // Format for lightweight-charts - use Unix timestamp (seconds)
-        const candles = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000),
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-        }))
+        // Format for lightweight-charts v4 - use date string format YYYY-MM-DD
+        const candles = data.history.map((item: any) => {
+          const dateStr = item.date.split('T')[0] // Extract YYYY-MM-DD
+          return {
+            time: dateStr,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            close: item.close,
+          }
+        })
         
-        const volumes = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000),
-          value: item.volume,
-          color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-        }))
+        const volumes = data.history.map((item: any) => {
+          const dateStr = item.date.split('T')[0]
+          return {
+            time: dateStr,
+            value: item.volume,
+            color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+          }
+        })
+        
+        console.log('Setting candle data:', candles.length, 'points')
+        console.log('First candle:', candles[0])
         
         if (candleSeriesRef.current) {
           candleSeriesRef.current.setData(candles)
+          console.log('Candle data set successfully')
         }
         if (volumeSeriesRef.current) {
           volumeSeriesRef.current.setData(volumes)
