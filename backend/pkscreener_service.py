@@ -243,10 +243,13 @@ def prepare_stock_data(df: pd.DataFrame) -> pd.DataFrame:
         # VWAP (if we have volume)
         df['VWAP'] = pktalib.VWAP(df['high'], df['low'], df['close'], df['volume'])
         
-        # Stochastic RSI
-        fastk, fastd = pktalib.STOCHRSI(df['close'], timeperiod=14)
-        df['STOCHRSIk'] = fastk
-        df['STOCHRSId'] = fastd
+        # Stochastic RSI - with proper parameters
+        try:
+            fastk, fastd = pktalib.STOCHRSI(df['close'], timeperiod=14, fastk_period=5, fastd_period=3, fastd_matype=0)
+            df['STOCHRSIk'] = fastk
+            df['STOCHRSId'] = fastd
+        except:
+            pass  # Skip if not supported
         
         # SuperTrend
         try:
