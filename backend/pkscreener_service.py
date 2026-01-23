@@ -458,7 +458,7 @@ def run_breakout_scan(df: pd.DataFrame, info: dict) -> dict:
     try:
         screenDict = {}
         saveDict = {}
-        result = screener.findPotentialBreakout(df, screenDict, saveDict)
+        result = screener.findPotentialBreakout(df, screenDict, saveDict, daysToLookback=20)
         
         # Also check distance from 52w high
         dist_from_high = 0
