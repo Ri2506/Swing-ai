@@ -483,8 +483,8 @@ export default function StockDetailPage() {
               Open in TradingView <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-          <div className="h-[600px]">
-            <TradingViewWidget symbol={symbol} />
+          <div className="p-4">
+            <TradingViewWidget symbol={symbol} priceData={stockData} />
           </div>
         </div>
         
