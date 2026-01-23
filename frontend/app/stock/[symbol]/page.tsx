@@ -52,98 +52,12 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Chart Widget - with fallback guidance
-function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  
-  useEffect(() => {
-    if (!containerRef.current) return
-    
-    containerRef.current.innerHTML = ''
-    setIsLoading(true)
-    
-    // Create widget container
-    const container = document.createElement('div')
-    container.className = 'tradingview-widget-container'
-    container.style.height = '100%'
-    container.style.width = '100%'
-    
-    const widget = document.createElement('div')
-    widget.className = 'tradingview-widget-container__widget'
-    widget.style.height = 'calc(100% - 32px)'
-    widget.style.width = '100%'
-    
-    const copyright = document.createElement('div')
-    copyright.className = 'tradingview-widget-copyright'
-    copyright.innerHTML = '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a>'
-    
-    container.appendChild(widget)
-    container.appendChild(copyright)
-    containerRef.current.appendChild(container)
-    
-    // Load TradingView widget script - Use BSE for better compatibility
-    const script = document.createElement('script')
-    script.type = 'text/javascript'
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      "autosize": true,
-      "symbol": `BSE:${symbol}`,
-      "interval": "D",
-      "timezone": "Asia/Kolkata",
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "allow_symbol_change": true,
-      "calendar": false,
-      "studies": ["STD;RSI"],
-      "support_host": "https://www.tradingview.com"
-    })
-    
-    script.onload = () => setTimeout(() => setIsLoading(false), 1500)
-    container.appendChild(script)
-    
-    return () => {
-      if (containerRef.current) containerRef.current.innerHTML = ''
-    }
-  }, [symbol])
-  
-  return (
-    <div className="w-full" data-testid="tradingview-chart">
-      <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
-            <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
-          </div>
-        )}
-        <div ref={containerRef} className="w-full h-full" />
-      </div>
-      {/* Fallback notice */}
-      <div className="mt-2 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
-        <p className="text-xs text-gray-400">
-          <span className="text-yellow-400">💡 Tip:</span> If chart shows "Invalid symbol", use the <span className="text-blue-400 font-medium">Price Overview</span> chart below (works for all stocks) or{' '}
-          <a 
-            href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:underline"
-          >
-            open full TradingView chart →
-          </a>
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// Custom Price Chart using Recharts with yfinance data
-function PriceChart({ symbol, priceData }: { symbol: string; priceData: StockData | null }) {
+// Beautiful Interactive Price Chart - Real NSE Data
+function StockChart({ symbol, priceData }: { symbol: string; priceData: StockData | null }) {
   const [chartData, setChartData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [timeframe, setTimeframe] = useState('1M')
-  
-  const tvSymbol = `NSE:${symbol}`
+  const [hoveredData, setHoveredData] = useState<any>(null)
   
   useEffect(() => {
     fetchChartData()
@@ -152,52 +66,206 @@ function PriceChart({ symbol, priceData }: { symbol: string; priceData: StockDat
   const fetchChartData = async () => {
     setIsLoading(true)
     try {
-      // Fetch historical data from our backend
       const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${timeframe.toLowerCase()}`)
       const data = await res.json()
       
       if (data.success && data.history) {
         const formattedData = data.history.map((item: any) => ({
           date: new Date(item.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+          fullDate: new Date(item.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
           open: item.open,
           high: item.high,
           low: item.low,
           close: item.close,
           volume: item.volume,
-          // For area chart
-          price: item.close
+          price: item.close,
+          change: item.close - item.open,
+          changePercent: ((item.close - item.open) / item.open * 100).toFixed(2)
         }))
         setChartData(formattedData)
       }
     } catch (error) {
       console.error('Error fetching chart data:', error)
-      // Generate placeholder data if API fails
-      const days = timeframe === '1W' ? 7 : timeframe === '1M' ? 30 : timeframe === '3M' ? 90 : 365
-      const basePrice = priceData?.price || 1000
-      const placeholderData = Array.from({ length: days }, (_, i) => {
-        const variance = (Math.random() - 0.5) * 0.02 * basePrice
-        const price = basePrice + variance
-        return {
-          date: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-          price: price,
-          open: price - Math.random() * 10,
-          high: price + Math.random() * 20,
-          low: price - Math.random() * 20,
-          close: price,
-          volume: Math.floor(Math.random() * 1000000)
-        }
-      })
-      setChartData(placeholderData)
     }
     setIsLoading(false)
   }
   
   const timeframes = [
-    { label: '1W', value: '1W' },
-    { label: '1M', value: '1M' },
-    { label: '3M', value: '3M' },
-    { label: '1Y', value: '1Y' },
+    { label: '1W', value: '1W', desc: '1 Week' },
+    { label: '1M', value: '1M', desc: '1 Month' },
+    { label: '3M', value: '3M', desc: '3 Months' },
+    { label: '1Y', value: '1Y', desc: '1 Year' },
   ]
+  
+  const isPositive = chartData.length > 1 ? chartData[chartData.length - 1]?.close >= chartData[0]?.close : true
+  const priceChange = chartData.length > 1 ? (chartData[chartData.length - 1]?.close - chartData[0]?.close) : 0
+  const priceChangePercent = chartData.length > 1 ? ((priceChange / chartData[0]?.close) * 100).toFixed(2) : '0'
+  
+  const minPrice = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) * 0.995 : 0
+  const maxPrice = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) * 1.005 : 0
+  
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 shadow-2xl">
+          <p className="text-gray-400 text-xs mb-2">{data.fullDate}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <span className="text-gray-500">Open</span>
+            <span className="text-white font-medium">₹{data.open?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">High</span>
+            <span className="text-green-400 font-medium">₹{data.high?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Low</span>
+            <span className="text-red-400 font-medium">₹{data.low?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Close</span>
+            <span className="text-white font-bold">₹{data.close?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Volume</span>
+            <span className="text-blue-400">{(data.volume / 1000000).toFixed(2)}M</span>
+          </div>
+          <div className={`mt-2 pt-2 border-t border-gray-700 text-center ${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {data.change >= 0 ? '▲' : '▼'} {data.changePercent}%
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+  
+  return (
+    <div className="w-full" data-testid="stock-chart">
+      {/* Chart Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          {/* Timeframe Buttons */}
+          <div className="flex items-center bg-gray-800/50 rounded-xl p-1">
+            {timeframes.map((tf) => (
+              <button
+                key={tf.value}
+                onClick={() => setTimeframe(tf.value)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                  timeframe === tf.value
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                {tf.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Period Change */}
+          {chartData.length > 0 && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isPositive ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+              <span className={`text-sm font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                {isPositive ? '▲' : '▼'} {priceChangePercent}%
+              </span>
+              <span className="text-xs text-gray-500">({timeframes.find(t => t.value === timeframe)?.desc})</span>
+            </div>
+          )}
+        </div>
+        
+        {/* TradingView Link */}
+        <a
+          href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition"
+        >
+          <ExternalLink className="w-4 h-4" />
+          TradingView
+        </a>
+      </div>
+      
+      {/* Main Chart */}
+      <div className="relative bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
+        {/* Chart Glow Effect */}
+        <div className={`absolute inset-0 opacity-20 ${isPositive ? 'bg-gradient-to-t from-green-500/20' : 'bg-gradient-to-t from-red-500/20'} to-transparent pointer-events-none`} />
+        
+        {isLoading ? (
+          <div className="h-[450px] flex items-center justify-center">
+            <div className="text-center">
+              <RefreshCw className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-3" />
+              <p className="text-gray-400">Loading chart data...</p>
+            </div>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="h-[450px] flex items-center justify-center">
+            <div className="text-center">
+              <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-400">No chart data available</p>
+              <a
+                href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+              >
+                View on TradingView <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4">
+            <ResponsiveContainer width="100%" height={420}>
+              <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.4}/>
+                    <stop offset="50%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
+                    <stop offset="100%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  interval="preserveStartEnd"
+                  dy={10}
+                />
+                <YAxis 
+                  domain={[minPrice, maxPrice]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#6b7280', fontSize: 11 }}
+                  tickFormatter={(value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                  width={70}
+                  dx={-5}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke={isPositive ? "#22c55e" : "#ef4444"}
+                  strokeWidth={2.5}
+                  fill="url(#priceGradient)"
+                  filter="url(#glow)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        
+        {/* Chart Footer */}
+        <div className="px-4 pb-4 flex items-center justify-between text-xs text-gray-500 border-t border-gray-800/50 pt-3">
+          <span>Real-time NSE data • Powered by yfinance</span>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-full ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              {isPositive ? 'Bullish' : 'Bearish'} trend
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
   
   const isPositive = chartData.length > 1 ? chartData[chartData.length - 1]?.close >= chartData[0]?.close : true
   
