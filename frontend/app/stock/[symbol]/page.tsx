@@ -177,20 +177,28 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       const data = await res.json()
       
       if (data.success && data.history && candleSeriesRef.current) {
-        // Format data for lightweight-charts
-        const candleData = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000) as any,
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-        }))
+        // Format data for lightweight-charts v5 - use YYYY-MM-DD string format
+        const candleData = data.history.map((item: any) => {
+          const date = new Date(item.date)
+          const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD format
+          return {
+            time: dateStr,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            close: item.close,
+          }
+        })
         
-        const volumeData = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000) as any,
-          value: item.volume,
-          color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-        }))
+        const volumeData = data.history.map((item: any) => {
+          const date = new Date(item.date)
+          const dateStr = date.toISOString().split('T')[0]
+          return {
+            time: dateStr,
+            value: item.volume,
+            color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+          }
+        })
         
         candleSeriesRef.current.setData(candleData)
         volumeSeriesRef.current?.setData(volumeData)
