@@ -102,8 +102,8 @@ async def get_watchlist(user_id: str):
         if not db:
             raise HTTPException(status_code=500, detail="Database not connected")
         
-        # Get watchlist items
-        result = db.table("watchlist").select("*").eq(
+        # Get watchlist items - select only columns that exist
+        result = db.table("watchlist").select("id, user_id, symbol, created_at").eq(
             "user_id", user_id
         ).order("created_at", desc=True).execute()
         
@@ -123,9 +123,9 @@ async def get_watchlist(user_id: str):
                 "change_percent": price_data.get("change_percent", 0) if price_data else 0,
                 "volume": price_data.get("volume", 0) if price_data else 0,
                 "sector": price_data.get("sector", "Unknown") if price_data else "Unknown",
-                "notes": item.get("notes"),
-                "target_price": float(item["target_price"]) if item.get("target_price") else None,
-                "stop_loss": float(item["stop_loss"]) if item.get("stop_loss") else None,
+                "notes": None,  # Column may not exist
+                "target_price": None,
+                "stop_loss": None,
                 "added_at": item["created_at"],
             })
         
