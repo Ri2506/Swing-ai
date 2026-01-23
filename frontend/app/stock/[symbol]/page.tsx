@@ -246,6 +246,21 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
             </div>
           </div>
         )}
+        {chartError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f23] z-10">
+            <div className="text-center p-4">
+              <p className="text-red-400 text-sm mb-2">Chart Error: {chartError}</p>
+              <a
+                href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
+              >
+                Open in TradingView <ExternalLink className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+        )}
         <div ref={chartContainerRef} className="w-full" style={{ height: '450px' }} />
       </div>
       
