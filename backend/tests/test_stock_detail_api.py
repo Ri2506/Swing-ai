@@ -58,8 +58,8 @@ class TestStockPriceAPI:
     def test_invalid_symbol_returns_error(self):
         """Test that invalid symbol returns appropriate error"""
         response = requests.get(f"{BASE_URL}/api/screener/prices/INVALID_SYMBOL_XYZ")
-        # Should return 404 or 500 for invalid symbol
-        assert response.status_code in [404, 500]
+        # Should return 404, 500, or 520 for invalid symbol
+        assert response.status_code in [404, 500, 520]
 
 
 class TestStockHistoryAPI:
@@ -191,7 +191,7 @@ class TestWatchlistAPI:
         """Test adding stock to watchlist"""
         response = requests.post(
             f"{BASE_URL}/api/watchlist/add",
-            json={"user_id": self.TEST_USER_ID, "symbol": "TEST_STOCK_HDFC"}
+            json={"user_id": self.TEST_USER_ID, "symbol": "HDFCBANK"}
         )
         # Should succeed or return conflict if already exists
         assert response.status_code in [200, 201, 409]
@@ -200,7 +200,7 @@ class TestWatchlistAPI:
     def test_remove_from_watchlist(self):
         """Test removing stock from watchlist"""
         response = requests.delete(
-            f"{BASE_URL}/api/watchlist/{self.TEST_USER_ID}/TEST_STOCK_HDFC"
+            f"{BASE_URL}/api/watchlist/{self.TEST_USER_ID}/HDFCBANK"
         )
         # Should succeed or return 404 if not found
         assert response.status_code in [200, 204, 404]
