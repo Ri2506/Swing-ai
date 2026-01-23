@@ -755,11 +755,14 @@ def scan_single_stock(symbol: str, scanner_id: str) -> dict:
     
     result = scanner_func(df, info)
     
-    return {
+    # Combine info and result, then convert numpy types
+    combined = {
         "symbol": symbol,
         **info,
         **result
     }
+    
+    return convert_numpy_types(combined)
 
 
 def scan_multiple_stocks(symbols: List[str], scanner_id: str, max_workers: int = 10) -> List[dict]:
