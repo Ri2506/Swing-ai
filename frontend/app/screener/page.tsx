@@ -420,7 +420,8 @@ export default function ScreenerPage() {
       const data = await response.json()
       
       if (data.success) {
-        setAiData({ type: feature.id, ...data.data })
+        // API returns data at root level, not in data.data
+        setAiData({ type: feature.id, ...data })
       }
     } catch (error) {
       console.error('AI feature failed:', error)
