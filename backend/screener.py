@@ -1314,6 +1314,54 @@ async def get_single_price(symbol: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/prices/{symbol}/history")
+async def get_price_history(
+    symbol: str,
+    period: str = Query("1m", description="Time period: 1w, 1m, 3m, 1y")
+):
+    """Get historical price data for charting"""
+    try:
+        full_symbol = f"{symbol.upper()}.NS"
+        ticker = yf.Ticker(full_symbol)
+        
+        # Map period to yfinance format
+        period_map = {
+            "1w": ("7d", "1h"),
+            "1m": ("1mo", "1d"),
+            "3m": ("3mo", "1d"),
+            "1y": ("1y", "1d"),
+        }
+        
+        yf_period, interval = period_map.get(period.lower(), ("1mo", "1d"))
+        data = ticker.history(period=yf_period, interval=interval)
+        
+        if data.empty:
+            raise HTTPException(status_code=404, detail="No historical data found")
+        
+        history = []
+        for idx, row in data.iterrows():
+            history.append({
+                "date": idx.isoformat(),
+                "open": round(float(row['Open']), 2),
+                "high": round(float(row['High']), 2),
+                "low": round(float(row['Low']), 2),
+                "close": round(float(row['Close']), 2),
+                "volume": int(row['Volume'])
+            })
+        
+        return {
+            "success": True,
+            "symbol": symbol.upper(),
+            "period": period,
+            "history": history,
+            "data_points": len(history)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================
 # 🤖 PKSCREENER AI ENDPOINTS
 # ============================================================
