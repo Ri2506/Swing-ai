@@ -765,12 +765,13 @@ def scan_single_stock(symbol: str, scanner_id: str) -> dict:
     return convert_numpy_types(combined)
 
 
-def scan_multiple_stocks(symbols: List[str], scanner_id: str, max_workers: int = 10) -> List[dict]:
+def scan_multiple_stocks(symbols: List[str], scanner_id: str, max_workers: int = 10, return_all: bool = False) -> List[dict]:
     """
     Run a scanner on multiple stocks in parallel.
-    Returns list of stocks that passed the scan.
+    Returns list of stocks that passed the scan (or all if return_all=True).
     """
     results = []
+    all_results = []
     
     def scan_stock(symbol):
         return scan_single_stock(symbol, scanner_id)
@@ -781,9 +782,63 @@ def scan_multiple_stocks(symbols: List[str], scanner_id: str, max_workers: int =
         for future in as_completed(futures):
             try:
                 result = future.result()
-                if result and result.get("passed"):
-                    results.append(result)
+                if result:
+                    all_results.append(result)
+                    if result.get("passed"):
+                        results.append(result)
             except Exception as e:
+                pass
+    
+    # If no stocks passed but we have results, return all with their analysis
+    if return_all or len(results) == 0:
+        return sorted(all_results, key=lambda x: x.get('ai_score', 0), reverse=True)
+    
+    return results
+
+
+def get_live_prices_batch(symbols: List[str]) -> List[dict]:
+    """
+    Get live prices for multiple stocks in parallel.
+    Used for real-time price updates on frontend.
+    """
+    results = []
+    
+    def fetch_price(symbol):
+        try:
+            full_symbol = f"{symbol}.NS" if not symbol.endswith('.NS') else symbol
+            ticker = yf.Ticker(full_symbol)
+            data = ticker.history(period="1d", interval="1m")
+            
+            if data.empty:
+                return None
+            
+            current = float(data['Close'].iloc[-1])
+            open_price = float(data['Open'].iloc[0])
+            change = current - open_price
+            change_pct = (change / open_price * 100) if open_price > 0 else 0
+            
+            return {
+                "symbol": symbol.replace('.NS', ''),
+                "price": round(current, 2),
+                "change": round(change, 2),
+                "change_percent": round(change_pct, 2),
+                "high": round(float(data['High'].max()), 2),
+                "low": round(float(data['Low'].min()), 2),
+                "volume": int(data['Volume'].sum()),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return None
+    
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        futures = {executor.submit(fetch_price, symbol): symbol for symbol in symbols}
+        
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                if result:
+                    results.append(result)
+            except:
                 pass
     
     return results
