@@ -49,19 +49,24 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Widget Component - Using iframe for reliability
+// TradingView Widget Component - Using symbol info + mini chart widget
 function TradingViewWidget({ symbol }: { symbol: string }) {
   const tvSymbol = `NSE:${symbol}`
   
+  // Using TradingView's public chart URL which works reliably
   return (
-    <div className="w-full h-full min-h-[500px]" data-testid="tradingview-chart">
-      <iframe
-        src={`https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${tvSymbol}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=1a1a1a&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies&theme=dark&style=1&timezone=Asia%2FKolkata&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%22mainSeriesProperties.candleStyle.upColor%22%3A%22%2322c55e%22%2C%22mainSeriesProperties.candleStyle.downColor%22%3A%22%23ef4444%22%7D&enabled_features=study_templates&disabled_features=&locale=en&utm_source=localhost`}
-        className="w-full h-full border-0"
-        style={{ minHeight: '500px' }}
-        allowFullScreen
-        loading="lazy"
-      />
+    <div className="w-full h-full min-h-[500px] flex flex-col" data-testid="tradingview-chart">
+      {/* Symbol Overview Widget */}
+      <div className="border-b border-gray-800 p-2">
+        <iframe 
+          scrolling="no" 
+          allowTransparency={true}
+          frameBorder="0" 
+          src={`https://s.tradingview.com/embed-widget/symbol-overview/?locale=en#%7B%22symbols%22%3A%5B%5B%22${tvSymbol}%22%5D%5D%2C%22chartOnly%22%3Afalse%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22showVolume%22%3Atrue%2C%22showMA%22%3Atrue%2C%22hideDateRanges%22%3Afalse%2C%22hideMarketStatus%22%3Afalse%2C%22hideSymbolLogo%22%3Afalse%2C%22scalePosition%22%3A%22right%22%2C%22scaleMode%22%3A%22Normal%22%2C%22fontFamily%22%3A%22-apple-system%2C%20BlinkMacSystemFont%2C%20Trebuchet%20MS%2C%20Roboto%2C%20Ubuntu%2C%20sans-serif%22%2C%22fontSize%22%3A%2210%22%2C%22noTimeScale%22%3Afalse%2C%22valuesTracking%22%3A%221%22%2C%22changeMode%22%3A%22price-and-percent%22%2C%22chartType%22%3A%22candlesticks%22%2C%22maLineColor%22%3A%22%232962FF%22%2C%22maLineWidth%22%3A1%2C%22maLength%22%3A20%2C%22lineWidth%22%3A2%2C%22lineType%22%3A0%2C%22dateRanges%22%3A%5B%221d%7C1%22%2C%221w%7C15%22%2C%221m%7C60%22%2C%223m%7C1D%22%2C%226m%7C1D%22%2C%221y%7C1W%22%2C%22all%7C1M%22%5D%7D`}
+          style={{ width: '100%', height: '450px' }}
+          className="bg-transparent"
+        />
+      </div>
     </div>
   )
 }
