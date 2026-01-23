@@ -638,7 +638,8 @@ async def run_pk_single_stock_scan(
 async def run_pk_batch_scan(
     scanner_id: str = Query("trend", description="Scanner ID to run"),
     universe: str = Query("nifty50", description="Stock universe: nifty50, nifty500, all"),
-    limit: int = Query(50, description="Max stocks to scan")
+    limit: int = Query(50, description="Max stocks to scan"),
+    return_all: bool = Query(True, description="Return all stocks with analysis")
 ):
     """Run a PKScreener scanner on multiple stocks"""
     try:
@@ -650,8 +651,8 @@ async def run_pk_batch_scan(
         else:
             symbols = get_nifty_50_stocks()[:limit]
         
-        # Run the scan
-        results = scan_multiple_stocks(symbols, scanner_id, max_workers=10)
+        # Run the scan - return_all=True to get all stocks with their analysis
+        results = scan_multiple_stocks(symbols, scanner_id, max_workers=10, return_all=return_all)
         
         # Sort by relevant score if available
         if results:
@@ -661,12 +662,16 @@ async def run_pk_batch_scan(
         
         results = sorted(results, key=lambda x: x.get('ai_score', 0), reverse=True)
         
+        # Count how many actually passed
+        passed_count = sum(1 for r in results if r.get('passed'))
+        
         return {
             "success": True,
             "scanner_id": scanner_id,
             "scanner_info": get_scanner_info(scanner_id),
             "universe": universe,
             "total_scanned": len(symbols),
+            "passed_count": passed_count,
             "results_count": len(results),
             "results": results,
             "timestamp": datetime.now().isoformat()
