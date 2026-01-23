@@ -52,246 +52,72 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// Real-time Candlestick Chart using Lightweight Charts (by TradingView)
+// TradingView Chart Widget - BSE format (robust embed)
 function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
-  const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<any>(null)
-  const candleSeriesRef = useRef<any>(null)
-  const volumeSeriesRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [chartError, setChartError] = useState<string | null>(null)
-  const [timeframe, setTimeframe] = useState('D')
-  
-  // Timeframe options
-  const timeframes = [
-    { label: '1H', value: '1h', period: '5d' },
-    { label: '4H', value: '4h', period: '1mo' },
-    { label: 'D', value: 'D', period: '1y' },
-    { label: 'W', value: 'W', period: '2y' },
-  ]
   
   useEffect(() => {
-    const initChart = async () => {
-      if (!chartContainerRef.current) return
-      
-      try {
-        // Dynamically import lightweight-charts
-        const LWC = await import('lightweight-charts')
-        
-        // Clear previous chart
-        if (chartRef.current) {
-          chartRef.current.remove()
-        }
-        chartContainerRef.current.innerHTML = ''
-        
-        // Create chart with autoSize
-        const chart = LWC.createChart(chartContainerRef.current, {
-          autoSize: true,
-          layout: {
-            background: { type: LWC.ColorType.Solid, color: '#0f0f23' },
-            textColor: '#9ca3af',
-          },
-          grid: {
-            vertLines: { color: '#1f2937' },
-            horzLines: { color: '#1f2937' },
-          },
-          rightPriceScale: {
-            borderColor: '#374151',
-          },
-          timeScale: {
-            borderColor: '#374151',
-            timeVisible: true,
-          },
-        })
-        
-        chartRef.current = chart
-        
-        // Add candlestick series (v4 API)
-        const candleSeries = chart.addCandlestickSeries({
-          upColor: '#22c55e',
-          downColor: '#ef4444',
-          borderUpColor: '#22c55e',
-          borderDownColor: '#ef4444',
-          wickUpColor: '#22c55e',
-          wickDownColor: '#ef4444',
-        })
-        candleSeriesRef.current = candleSeries
-        
-        // Add volume histogram (v4 API)
-        const volumeSeries = chart.addHistogramSeries({
-          priceFormat: { type: 'volume' },
-          priceScaleId: 'volume',
-        })
-        chart.priceScale('volume').applyOptions({
-          scaleMargins: { top: 0.85, bottom: 0 },
-        })
-        volumeSeriesRef.current = volumeSeries
-        
-        // Fetch data
-        await fetchData()
-        
-        // Handle resize
-        const handleResize = () => {
-          if (chartContainerRef.current && chartRef.current) {
-            chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth })
-          }
-        }
-        window.addEventListener('resize', handleResize)
-        
-        return () => {
-          window.removeEventListener('resize', handleResize)
-        }
-      } catch (err: any) {
-        console.error('Chart init error:', err)
-        setChartError(err.message || 'Failed to load chart')
-        setIsLoading(false)
-      }
-    }
+    if (!containerRef.current) return
     
-    initChart()
+    containerRef.current.innerHTML = ''
+    setIsLoading(true)
+    
+    // Create widget container
+    const container = document.createElement('div')
+    container.className = 'tradingview-widget-container'
+    container.style.height = '100%'
+    container.style.width = '100%'
+    
+    const widget = document.createElement('div')
+    widget.className = 'tradingview-widget-container__widget'
+    widget.style.height = 'calc(100% - 32px)'
+    widget.style.width = '100%'
+    
+    const copyright = document.createElement('div')
+    copyright.className = 'tradingview-widget-copyright'
+    copyright.innerHTML = '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a>'
+    
+    container.appendChild(widget)
+    container.appendChild(copyright)
+    containerRef.current.appendChild(container)
+    
+    // Load TradingView widget script
+    const script = document.createElement('script')
+    script.type = 'text/javascript'
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
+    script.async = true
+    script.innerHTML = JSON.stringify({
+      "autosize": true,
+      "symbol": `BSE:${symbol}`,
+      "interval": "D",
+      "timezone": "Asia/Kolkata",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "allow_symbol_change": true,
+      "calendar": false,
+      "studies": ["STD;RSI"],
+      "support_host": "https://www.tradingview.com"
+    })
+    
+    script.onload = () => setTimeout(() => setIsLoading(false), 1500)
+    container.appendChild(script)
     
     return () => {
-      if (chartRef.current) {
-        chartRef.current.remove()
-        chartRef.current = null
-      }
+      if (containerRef.current) containerRef.current.innerHTML = ''
     }
   }, [symbol])
   
-  const fetchData = async () => {
-    setIsLoading(true)
-    try {
-      const tf = timeframes.find(t => t.value === timeframe)
-      const period = tf?.period || '1y'
-      
-      const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${period}`)
-      const data = await res.json()
-      
-      console.log('Chart data received:', data.success, data.data_points)
-      
-      if (data.success && data.history?.length > 0) {
-        // Format for lightweight-charts v4 - use date string format YYYY-MM-DD
-        const candles = data.history.map((item: any) => {
-          const dateStr = item.date.split('T')[0] // Extract YYYY-MM-DD
-          return {
-            time: dateStr,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-          }
-        })
-        
-        const volumes = data.history.map((item: any) => {
-          const dateStr = item.date.split('T')[0]
-          return {
-            time: dateStr,
-            value: item.volume,
-            color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-          }
-        })
-        
-        console.log('Setting candle data:', candles.length, 'points')
-        console.log('First candle:', candles[0])
-        
-        if (candleSeriesRef.current) {
-          candleSeriesRef.current.setData(candles)
-          console.log('Candle data set successfully')
-        }
-        if (volumeSeriesRef.current) {
-          volumeSeriesRef.current.setData(volumes)
-        }
-        
-        // Force chart to render with timeout
-        setTimeout(() => {
-          if (chartRef.current) {
-            chartRef.current.timeScale().fitContent()
-            // Also try triggering a resize to force redraw
-            chartRef.current.applyOptions({})
-          }
-        }, 100)
-      }
-    } catch (err) {
-      console.error('Fetch error:', err)
-    }
-    setIsLoading(false)
-  }
-  
-  // Re-fetch when timeframe changes
-  useEffect(() => {
-    if (candleSeriesRef.current) {
-      fetchData()
-    }
-  }, [timeframe])
-  
   return (
-    <div className="w-full" data-testid="tradingview-advanced-chart">
-      {/* Timeframe selector */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {timeframes.map((tf) => (
-            <button
-              key={tf.value}
-              onClick={() => setTimeframe(tf.value)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                timeframe === tf.value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              {tf.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full"></span> Bullish
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-red-500 rounded-full"></span> Bearish
-          </span>
-        </div>
-      </div>
-      
-      {/* Chart container */}
-      <div className="relative bg-[#0f0f23] rounded-lg overflow-hidden border border-gray-800">
+    <div className="w-full" data-testid="tradingview-chart">
+      <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f23]/80 z-10">
-            <div className="text-center">
-              <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">Loading chart...</p>
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
+            <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
           </div>
         )}
-        {chartError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f23] z-10">
-            <div className="text-center p-4">
-              <p className="text-red-400 text-sm mb-2">Chart Error: {chartError}</p>
-              <a
-                href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
-              >
-                Open in TradingView <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-        )}
-        <div ref={chartContainerRef} className="w-full" style={{ height: '450px' }} />
-      </div>
-      
-      {/* Chart info */}
-      <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-        <span>Real-time NSE data • Powered by yfinance</span>
-        <a
-          href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300"
-        >
-          Open in TradingView <ExternalLink className="w-3 h-3" />
-        </a>
+        <div ref={containerRef} className="w-full h-full" />
       </div>
     </div>
   )
