@@ -41,11 +41,48 @@ except Exception as e:
 router = APIRouter(prefix="/screener", tags=["Screener"])
 
 # ============================================================
-# 📊 STOCK UNIVERSE
+# 📊 STOCK UNIVERSE - Auto-updating from NSE
 # ============================================================
 
+# Global stock list with last update time
+_STOCK_LIST_CACHE = {
+    "all_nse": [],
+    "last_updated": None
+}
+
+def refresh_nse_stock_list() -> List[str]:
+    """Refresh stock list from NSE (call periodically or on demand)"""
+    global _STOCK_LIST_CACHE, ALL_NSE_STOCKS
+    
+    try:
+        from nsepython import nse_eq_symbols
+        symbols = nse_eq_symbols()
+        if symbols and len(symbols) > 0:
+            ALL_NSE_STOCKS = symbols
+            _STOCK_LIST_CACHE["all_nse"] = symbols
+            _STOCK_LIST_CACHE["last_updated"] = datetime.now().isoformat()
+            print(f"✅ Stock list refreshed: {len(symbols)} symbols")
+            return symbols
+    except Exception as e:
+        print(f"⚠️ Error refreshing stock list: {e}")
+    
+    return ALL_NSE_STOCKS
+
+
 def get_all_nse_stocks() -> List[str]:
-    """Get all 2200+ NSE stock symbols"""
+    """Get all NSE stock symbols (auto-refreshes if stale)"""
+    global ALL_NSE_STOCKS
+    
+    # Check if we need to refresh (older than 24 hours)
+    last_update = _STOCK_LIST_CACHE.get("last_updated")
+    if last_update:
+        try:
+            last_dt = datetime.fromisoformat(last_update)
+            if datetime.now() - last_dt > timedelta(hours=24):
+                refresh_nse_stock_list()
+        except:
+            pass
+    
     if NSE_AVAILABLE and ALL_NSE_STOCKS:
         return ALL_NSE_STOCKS
     return get_nifty_500_stocks()
