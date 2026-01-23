@@ -84,13 +84,14 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     containerRef.current.appendChild(widgetContainer)
     
     // Create and load the TradingView script
+    // Try BSE (Bombay Stock Exchange) which may have better embed support
     const script = document.createElement('script')
     script.type = 'text/javascript'
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
     script.async = true
     script.innerHTML = JSON.stringify({
       "autosize": true,
-      "symbol": `NSE:${symbol}`,
+      "symbol": `BSE:${symbol}`,
       "interval": "D",
       "timezone": "Asia/Kolkata",
       "theme": "dark",
