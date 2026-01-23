@@ -52,10 +52,11 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Chart Widget - BSE format (robust embed)
+// TradingView Chart Widget - with NSE fallback
 function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [exchange, setExchange] = useState('BSE') // Try BSE first, fallback to NSE
   
   useEffect(() => {
     if (!containerRef.current) return
@@ -89,7 +90,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     script.async = true
     script.innerHTML = JSON.stringify({
       "autosize": true,
-      "symbol": `BSE:${symbol}`,
+      "symbol": `${exchange}:${symbol}`,
       "interval": "D",
       "timezone": "Asia/Kolkata",
       "theme": "dark",
@@ -107,10 +108,29 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     return () => {
       if (containerRef.current) containerRef.current.innerHTML = ''
     }
-  }, [symbol])
+  }, [symbol, exchange])
   
   return (
     <div className="w-full" data-testid="tradingview-chart">
+      {/* Exchange toggle */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Exchange:</span>
+          <button
+            onClick={() => setExchange('BSE')}
+            className={`px-2 py-1 text-xs rounded ${exchange === 'BSE' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+          >
+            BSE
+          </button>
+          <button
+            onClick={() => setExchange('NSE')}
+            className={`px-2 py-1 text-xs rounded ${exchange === 'NSE' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+          >
+            NSE
+          </button>
+        </div>
+        <span className="text-xs text-gray-500">If chart shows invalid, try switching exchange</span>
+      </div>
       <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
