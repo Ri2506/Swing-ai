@@ -52,92 +52,211 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Embedded Advanced Chart Widget - Using tv.js
+// Real-time Candlestick Chart using Lightweight Charts (by TradingView)
 function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const chartContainerRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<any>(null)
+  const candleSeriesRef = useRef<any>(null)
+  const volumeSeriesRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const widgetId = `tradingview_${symbol}_${Date.now()}`
+  const [timeframe, setTimeframe] = useState('D')
+  
+  // Timeframe options
+  const timeframes = [
+    { label: '1H', value: '1h', period: '5d' },
+    { label: '4H', value: '4h', period: '1mo' },
+    { label: 'D', value: 'D', period: '1y' },
+    { label: 'W', value: 'W', period: '2y' },
+  ]
   
   useEffect(() => {
-    if (!containerRef.current) return
+    let chart: any = null
     
-    // Clear previous widget
-    containerRef.current.innerHTML = ''
-    setIsLoading(true)
-    
-    // Create widget container div
-    const widgetDiv = document.createElement('div')
-    widgetDiv.id = widgetId
-    widgetDiv.style.height = '100%'
-    widgetDiv.style.width = '100%'
-    containerRef.current.appendChild(widgetDiv)
-    
-    // Check if TradingView is already loaded
-    // @ts-ignore
-    if (window.TradingView) {
-      createWidget()
-    } else {
-      // Load tv.js script
-      const script = document.createElement('script')
-      script.src = 'https://s3.tradingview.com/tv.js'
-      script.async = true
-      script.onload = createWidget
-      script.onerror = () => {
-        setIsLoading(false)
-        console.error('Failed to load TradingView script')
+    const initChart = async () => {
+      if (!chartContainerRef.current) return
+      
+      // Dynamically import lightweight-charts
+      const { createChart, ColorType } = await import('lightweight-charts')
+      
+      // Clear previous chart
+      chartContainerRef.current.innerHTML = ''
+      
+      // Create chart
+      chart = createChart(chartContainerRef.current, {
+        layout: {
+          background: { type: ColorType.Solid, color: '#0f0f23' },
+          textColor: '#9ca3af',
+        },
+        grid: {
+          vertLines: { color: '#1f2937' },
+          horzLines: { color: '#1f2937' },
+        },
+        crosshair: {
+          mode: 1,
+          vertLine: { color: '#6366f1', width: 1, style: 2 },
+          horzLine: { color: '#6366f1', width: 1, style: 2 },
+        },
+        rightPriceScale: {
+          borderColor: '#374151',
+          scaleMargins: { top: 0.1, bottom: 0.2 },
+        },
+        timeScale: {
+          borderColor: '#374151',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        width: chartContainerRef.current.clientWidth,
+        height: 450,
+      })
+      
+      chartRef.current = chart
+      
+      // Add candlestick series
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: '#22c55e',
+        downColor: '#ef4444',
+        borderUpColor: '#22c55e',
+        borderDownColor: '#ef4444',
+        wickUpColor: '#22c55e',
+        wickDownColor: '#ef4444',
+      })
+      candleSeriesRef.current = candleSeries
+      
+      // Add volume series
+      const volumeSeries = chart.addHistogramSeries({
+        color: '#6366f1',
+        priceFormat: { type: 'volume' },
+        priceScaleId: '',
+      })
+      volumeSeries.priceScale().applyOptions({
+        scaleMargins: { top: 0.85, bottom: 0 },
+      })
+      volumeSeriesRef.current = volumeSeries
+      
+      // Fetch and set data
+      await fetchChartData()
+      
+      // Handle resize
+      const handleResize = () => {
+        if (chartContainerRef.current && chart) {
+          chart.applyOptions({ width: chartContainerRef.current.clientWidth })
+        }
       }
-      document.head.appendChild(script)
+      window.addEventListener('resize', handleResize)
+      
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        if (chart) chart.remove()
+      }
     }
     
-    function createWidget() {
-      try {
-        // @ts-ignore
-        new window.TradingView.widget({
-          "autosize": true,
-          "symbol": `NSE:${symbol}`,
-          "interval": "D",
-          "timezone": "Asia/Kolkata",
-          "theme": "dark",
-          "style": "1",
-          "locale": "en",
-          "toolbar_bg": "#1a1a2e",
-          "enable_publishing": false,
-          "allow_symbol_change": true,
-          "hide_top_toolbar": false,
-          "hide_legend": false,
-          "save_image": true,
-          "container_id": widgetId,
-          "studies": [
-            "RSI@tv-basicstudies",
-            "MASimple@tv-basicstudies"
-          ]
-        })
-        setTimeout(() => setIsLoading(false), 2000)
-      } catch (err) {
-        console.error('TradingView widget error:', err)
-        setIsLoading(false)
-      }
-    }
+    initChart()
     
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ''
+      if (chartRef.current) {
+        chartRef.current.remove()
+        chartRef.current = null
       }
     }
   }, [symbol])
   
+  // Fetch data when timeframe changes
+  useEffect(() => {
+    if (candleSeriesRef.current) {
+      fetchChartData()
+    }
+  }, [timeframe])
+  
+  const fetchChartData = async () => {
+    setIsLoading(true)
+    try {
+      const tf = timeframes.find(t => t.value === timeframe)
+      const period = tf?.period || '1y'
+      
+      const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${period}`)
+      const data = await res.json()
+      
+      if (data.success && data.history && candleSeriesRef.current) {
+        // Format data for lightweight-charts
+        const candleData = data.history.map((item: any) => ({
+          time: Math.floor(new Date(item.date).getTime() / 1000),
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+        }))
+        
+        const volumeData = data.history.map((item: any) => ({
+          time: Math.floor(new Date(item.date).getTime() / 1000),
+          value: item.volume,
+          color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+        }))
+        
+        candleSeriesRef.current.setData(candleData)
+        volumeSeriesRef.current?.setData(volumeData)
+        
+        // Fit content
+        chartRef.current?.timeScale().fitContent()
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+    }
+    setIsLoading(false)
+  }
+  
   return (
     <div className="w-full" data-testid="tradingview-advanced-chart">
-      <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
+      {/* Timeframe selector */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          {timeframes.map((tf) => (
+            <button
+              key={tf.value}
+              onClick={() => setTimeframe(tf.value)}
+              className={`px-3 py-1.5 text-sm rounded-lg transition ${
+                timeframe === tf.value
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span> Bullish
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-red-500 rounded-full"></span> Bearish
+          </span>
+        </div>
+      </div>
+      
+      {/* Chart container */}
+      <div className="relative bg-[#0f0f23] rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f23]/80 z-10">
             <div className="text-center">
-              <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">Loading TradingView...</p>
+              <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">Loading chart...</p>
             </div>
           </div>
         )}
-        <div ref={containerRef} className="w-full h-full" />
+        <div ref={chartContainerRef} className="w-full" style={{ height: '450px' }} />
+      </div>
+      
+      {/* Chart info */}
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+        <span>Real-time NSE data • Powered by yfinance</span>
+        <a
+          href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300"
+        >
+          Open in TradingView <ExternalLink className="w-3 h-3" />
+        </a>
       </div>
     </div>
   )
