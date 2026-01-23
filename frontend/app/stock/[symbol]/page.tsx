@@ -59,6 +59,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
   const candleSeriesRef = useRef<any>(null)
   const volumeSeriesRef = useRef<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [chartError, setChartError] = useState<string | null>(null)
   const [timeframe, setTimeframe] = useState('D')
   
   // Timeframe options
@@ -70,83 +71,81 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
   ]
   
   useEffect(() => {
-    let chart: any = null
-    
     const initChart = async () => {
       if (!chartContainerRef.current) return
       
-      // Dynamically import lightweight-charts
-      const LightweightCharts = await import('lightweight-charts')
-      
-      // Clear previous chart
-      chartContainerRef.current.innerHTML = ''
-      
-      // Create chart using v5 API
-      chart = LightweightCharts.createChart(chartContainerRef.current, {
-        layout: {
-          background: { type: LightweightCharts.ColorType.Solid, color: '#0f0f23' },
-          textColor: '#9ca3af',
-        },
-        grid: {
-          vertLines: { color: '#1f2937' },
-          horzLines: { color: '#1f2937' },
-        },
-        crosshair: {
-          mode: LightweightCharts.CrosshairMode.Normal,
-          vertLine: { color: '#6366f1', width: 1, style: LightweightCharts.LineStyle.Dashed },
-          horzLine: { color: '#6366f1', width: 1, style: LightweightCharts.LineStyle.Dashed },
-        },
-        rightPriceScale: {
-          borderColor: '#374151',
-          scaleMargins: { top: 0.1, bottom: 0.2 },
-        },
-        timeScale: {
-          borderColor: '#374151',
-          timeVisible: true,
-          secondsVisible: false,
-        },
-        width: chartContainerRef.current.clientWidth,
-        height: 450,
-      })
-      
-      chartRef.current = chart
-      
-      // Add candlestick series using v5 API
-      const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
-        upColor: '#22c55e',
-        downColor: '#ef4444',
-        borderUpColor: '#22c55e',
-        borderDownColor: '#ef4444',
-        wickUpColor: '#22c55e',
-        wickDownColor: '#ef4444',
-      })
-      candleSeriesRef.current = candleSeries
-      
-      // Add volume series using v5 API
-      const volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
-        color: '#6366f1',
-        priceFormat: { type: 'volume' },
-        priceScaleId: 'volume',
-      })
-      chart.priceScale('volume').applyOptions({
-        scaleMargins: { top: 0.85, bottom: 0 },
-      })
-      volumeSeriesRef.current = volumeSeries
-      
-      // Fetch and set data
-      await fetchChartData()
-      
-      // Handle resize
-      const handleResize = () => {
-        if (chartContainerRef.current && chart) {
-          chart.applyOptions({ width: chartContainerRef.current.clientWidth })
+      try {
+        // Dynamically import lightweight-charts
+        const LWC = await import('lightweight-charts')
+        
+        // Clear previous chart
+        if (chartRef.current) {
+          chartRef.current.remove()
         }
-      }
-      window.addEventListener('resize', handleResize)
-      
-      return () => {
-        window.removeEventListener('resize', handleResize)
-        if (chart) chart.remove()
+        chartContainerRef.current.innerHTML = ''
+        
+        // Create chart
+        const chart = LWC.createChart(chartContainerRef.current, {
+          layout: {
+            background: { type: LWC.ColorType.Solid, color: '#0f0f23' },
+            textColor: '#9ca3af',
+          },
+          grid: {
+            vertLines: { color: '#1f2937' },
+            horzLines: { color: '#1f2937' },
+          },
+          rightPriceScale: {
+            borderColor: '#374151',
+          },
+          timeScale: {
+            borderColor: '#374151',
+            timeVisible: true,
+          },
+          width: chartContainerRef.current.clientWidth,
+          height: 450,
+        })
+        
+        chartRef.current = chart
+        
+        // Add candlestick series - v5 uses addSeries with type
+        const candleSeries = chart.addSeries(LWC.CandlestickSeries, {
+          upColor: '#22c55e',
+          downColor: '#ef4444',
+          borderUpColor: '#22c55e',
+          borderDownColor: '#ef4444',
+          wickUpColor: '#22c55e',
+          wickDownColor: '#ef4444',
+        })
+        candleSeriesRef.current = candleSeries
+        
+        // Add volume histogram
+        const volumeSeries = chart.addSeries(LWC.HistogramSeries, {
+          priceFormat: { type: 'volume' },
+          priceScaleId: 'volume',
+        })
+        chart.priceScale('volume').applyOptions({
+          scaleMargins: { top: 0.85, bottom: 0 },
+        })
+        volumeSeriesRef.current = volumeSeries
+        
+        // Fetch data
+        await fetchData()
+        
+        // Handle resize
+        const handleResize = () => {
+          if (chartContainerRef.current && chartRef.current) {
+            chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth })
+          }
+        }
+        window.addEventListener('resize', handleResize)
+        
+        return () => {
+          window.removeEventListener('resize', handleResize)
+        }
+      } catch (err: any) {
+        console.error('Chart init error:', err)
+        setChartError(err.message || 'Failed to load chart')
+        setIsLoading(false)
       }
     }
     
@@ -160,14 +159,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     }
   }, [symbol])
   
-  // Fetch data when timeframe changes
-  useEffect(() => {
-    if (candleSeriesRef.current) {
-      fetchChartData()
-    }
-  }, [timeframe])
-  
-  const fetchChartData = async () => {
+  const fetchData = async () => {
     setIsLoading(true)
     try {
       const tf = timeframes.find(t => t.value === timeframe)
@@ -176,41 +168,44 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${period}`)
       const data = await res.json()
       
-      if (data.success && data.history && candleSeriesRef.current) {
-        // Format data for lightweight-charts v5 - use YYYY-MM-DD string format
-        const candleData = data.history.map((item: any) => {
-          const date = new Date(item.date)
-          const dateStr = date.toISOString().split('T')[0] // YYYY-MM-DD format
-          return {
-            time: dateStr,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-          }
-        })
+      if (data.success && data.history?.length > 0) {
+        // Format for lightweight-charts - YYYY-MM-DD string
+        const candles = data.history.map((item: any) => ({
+          time: item.date.split('T')[0],
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+        }))
         
-        const volumeData = data.history.map((item: any) => {
-          const date = new Date(item.date)
-          const dateStr = date.toISOString().split('T')[0]
-          return {
-            time: dateStr,
-            value: item.volume,
-            color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
-          }
-        })
+        const volumes = data.history.map((item: any) => ({
+          time: item.date.split('T')[0],
+          value: item.volume,
+          color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+        }))
         
-        candleSeriesRef.current.setData(candleData)
-        volumeSeriesRef.current?.setData(volumeData)
-        
-        // Fit content
-        chartRef.current?.timeScale().fitContent()
+        if (candleSeriesRef.current) {
+          candleSeriesRef.current.setData(candles)
+        }
+        if (volumeSeriesRef.current) {
+          volumeSeriesRef.current.setData(volumes)
+        }
+        if (chartRef.current) {
+          chartRef.current.timeScale().fitContent()
+        }
       }
-    } catch (error) {
-      console.error('Error fetching chart data:', error)
+    } catch (err) {
+      console.error('Fetch error:', err)
     }
     setIsLoading(false)
   }
+  
+  // Re-fetch when timeframe changes
+  useEffect(() => {
+    if (candleSeriesRef.current) {
+      fetchData()
+    }
+  }, [timeframe])
   
   return (
     <div className="w-full" data-testid="tradingview-advanced-chart">
