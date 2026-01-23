@@ -127,14 +127,14 @@ function StockCard({ stock, index, onAddToWatchlist, onViewChart, isInWatchlist 
         {/* Actions */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => onViewChart(stock.symbol)}
+            onClick={(e) => { e.stopPropagation(); onViewChart(stock.symbol) }}
             className="flex-1 flex items-center justify-center gap-1 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition"
           >
             <Eye className="w-4 h-4" />
             Chart
           </button>
           <button
-            onClick={() => onAddToWatchlist(stock.symbol)}
+            onClick={(e) => { e.stopPropagation(); onAddToWatchlist(stock.symbol) }}
             className={`flex items-center justify-center gap-1 py-2 px-3 rounded-lg text-sm transition ${
               isInWatchlist 
                 ? 'bg-yellow-500/20 text-yellow-400' 
