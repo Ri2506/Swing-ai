@@ -188,7 +188,7 @@ def get_stock_data(symbol: str) -> dict:
             "above_ma_50": current_price > ma_50,
             "market_cap": info.get("marketCap", 0),
         }
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -1449,7 +1449,7 @@ async def get_trend_analysis(
             else:
                 stock["trend"] = "SIDEWAYS"
                 stock["trend_strength"] = "Neutral"
-                stock["signal_reason"] = f"Sideways - mixed signals"
+                stock["signal_reason"] = "Sideways - mixed signals"
                 sideways.append(stock)
         
         return {
