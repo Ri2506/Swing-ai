@@ -49,23 +49,60 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Widget Component - Using symbol info + mini chart widget
+// TradingView Widget - Using the mini chart widget which is more reliable
 function TradingViewWidget({ symbol }: { symbol: string }) {
   const tvSymbol = `NSE:${symbol}`
+  const containerRef = useRef<HTMLDivElement>(null)
   
-  // Using TradingView's public chart URL which works reliably
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    // Clear previous content
+    containerRef.current.innerHTML = ''
+    
+    // Create the TradingView mini chart widget script
+    const script = document.createElement('script')
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js'
+    script.async = true
+    script.innerHTML = JSON.stringify({
+      "symbol": tvSymbol,
+      "width": "100%",
+      "height": "100%",
+      "locale": "en",
+      "dateRange": "12M",
+      "colorTheme": "dark",
+      "isTransparent": true,
+      "autosize": true,
+      "largeChartUrl": `https://www.tradingview.com/chart/?symbol=${tvSymbol}`
+    })
+    
+    const widgetDiv = document.createElement('div')
+    widgetDiv.className = 'tradingview-widget-container__widget'
+    
+    containerRef.current.appendChild(widgetDiv)
+    containerRef.current.appendChild(script)
+  }, [symbol])
+  
   return (
-    <div className="w-full h-full min-h-[500px] flex flex-col" data-testid="tradingview-chart">
-      {/* Symbol Overview Widget */}
-      <div className="border-b border-gray-800 p-2">
-        <iframe 
-          scrolling="no" 
-          allowTransparency={true}
-          frameBorder="0" 
-          src={`https://s.tradingview.com/embed-widget/symbol-overview/?locale=en#%7B%22symbols%22%3A%5B%5B%22${tvSymbol}%22%5D%5D%2C%22chartOnly%22%3Afalse%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22showVolume%22%3Atrue%2C%22showMA%22%3Atrue%2C%22hideDateRanges%22%3Afalse%2C%22hideMarketStatus%22%3Afalse%2C%22hideSymbolLogo%22%3Afalse%2C%22scalePosition%22%3A%22right%22%2C%22scaleMode%22%3A%22Normal%22%2C%22fontFamily%22%3A%22-apple-system%2C%20BlinkMacSystemFont%2C%20Trebuchet%20MS%2C%20Roboto%2C%20Ubuntu%2C%20sans-serif%22%2C%22fontSize%22%3A%2210%22%2C%22noTimeScale%22%3Afalse%2C%22valuesTracking%22%3A%221%22%2C%22changeMode%22%3A%22price-and-percent%22%2C%22chartType%22%3A%22candlesticks%22%2C%22maLineColor%22%3A%22%232962FF%22%2C%22maLineWidth%22%3A1%2C%22maLength%22%3A20%2C%22lineWidth%22%3A2%2C%22lineType%22%3A0%2C%22dateRanges%22%3A%5B%221d%7C1%22%2C%221w%7C15%22%2C%221m%7C60%22%2C%223m%7C1D%22%2C%226m%7C1D%22%2C%221y%7C1W%22%2C%22all%7C1M%22%5D%7D`}
-          style={{ width: '100%', height: '450px' }}
-          className="bg-transparent"
-        />
+    <div className="w-full" data-testid="tradingview-chart">
+      {/* Mini Symbol Overview Widget */}
+      <div ref={containerRef} className="h-[400px]" />
+      
+      {/* Alternative: Direct link to full TradingView chart */}
+      <div className="mt-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+        <p className="text-sm text-gray-400 mb-3">
+          For advanced charting with indicators, open in TradingView:
+        </p>
+        <a 
+          href={`https://www.tradingview.com/chart/?symbol=${tvSymbol}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition"
+        >
+          <LineChart className="w-4 h-4" />
+          Open Full Chart
+          <ExternalLink className="w-3 h-3" />
+        </a>
       </div>
     </div>
   )
