@@ -554,6 +554,491 @@ async def run_scanner(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ============================================================
+# 🚀 PKSCREENER FULL INTEGRATION - 40+ SCANNERS
+# ============================================================
+
+# Import the PKScreener service
+try:
+    from pkscreener_service import (
+        SCANNER_CATEGORIES, ALL_SCANNERS, PKSCREENER_AVAILABLE as PK_SERVICE_AVAILABLE,
+        scan_single_stock, scan_multiple_stocks, get_scanner_categories,
+        get_all_scanners, get_scanner_info, get_nifty_prediction as pk_nifty_prediction
+    )
+    print("✅ PKScreener Service loaded with 40+ scanners")
+except Exception as e:
+    PK_SERVICE_AVAILABLE = False
+    print(f"⚠️ PKScreener Service not loaded: {e}")
+
+
+@router.get("/pk/categories")
+async def get_pk_scanner_categories():
+    """Get all PKScreener scanner categories and their scanners"""
+    try:
+        return {
+            "success": True,
+            "categories": SCANNER_CATEGORIES,
+            "total_scanners": len(ALL_SCANNERS),
+            "service_available": PK_SERVICE_AVAILABLE
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/scanners")
+async def get_pk_all_scanners():
+    """Get flat list of all 40+ PKScreener scanners"""
+    try:
+        return {
+            "success": True,
+            "scanners": ALL_SCANNERS,
+            "count": len(ALL_SCANNERS),
+            "categories": list(SCANNER_CATEGORIES.keys())
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/scanner/{scanner_id}")
+async def get_pk_scanner_details(scanner_id: str):
+    """Get details about a specific scanner"""
+    try:
+        info = get_scanner_info(scanner_id)
+        if not info:
+            raise HTTPException(status_code=404, detail=f"Scanner '{scanner_id}' not found")
+        
+        return {
+            "success": True,
+            "scanner": info
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pk/scan/single")
+async def run_pk_single_stock_scan(
+    symbol: str = Query(..., description="Stock symbol (e.g., RELIANCE)"),
+    scanner_id: str = Query("trend", description="Scanner ID to run")
+):
+    """Run a PKScreener scanner on a single stock"""
+    try:
+        result = scan_single_stock(symbol, scanner_id)
+        return {
+            "success": True,
+            "scanner_id": scanner_id,
+            "result": result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pk/scan/batch")
+async def run_pk_batch_scan(
+    scanner_id: str = Query("trend", description="Scanner ID to run"),
+    universe: str = Query("nifty50", description="Stock universe: nifty50, nifty500, all"),
+    limit: int = Query(50, description="Max stocks to scan")
+):
+    """Run a PKScreener scanner on multiple stocks"""
+    try:
+        # Get stock list based on universe
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:limit]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:limit]
+        else:
+            symbols = get_nifty_50_stocks()[:limit]
+        
+        # Run the scan
+        results = scan_multiple_stocks(symbols, scanner_id, max_workers=10)
+        
+        # Sort by relevant score if available
+        if results:
+            for r in results:
+                if 'ai_score' not in r:
+                    r['ai_score'] = 50  # Default score
+        
+        results = sorted(results, key=lambda x: x.get('ai_score', 0), reverse=True)
+        
+        return {
+            "success": True,
+            "scanner_id": scanner_id,
+            "scanner_info": get_scanner_info(scanner_id),
+            "universe": universe,
+            "total_scanned": len(symbols),
+            "results_count": len(results),
+            "results": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/strong-buy")
+async def get_pk_strong_buy_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get stocks with strong buy signals using PKScreener AI"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "strong_buy", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Strong Buy Signals",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/strong-sell")
+async def get_pk_strong_sell_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get stocks with strong sell signals using PKScreener AI"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "strong_sell", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Strong Sell Signals",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/breakouts")
+async def get_pk_breakout_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get potential breakout stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "probable_breakout", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Breakout Detection",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/reversals")
+async def get_pk_reversal_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get potential reversal stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "buy_reversal", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Reversal Detection",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/momentum")
+async def get_pk_high_momentum_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get high momentum stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "high_momentum", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener High Momentum",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/patterns/vcp")
+async def get_pk_vcp_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get VCP (Volatility Contraction Pattern) stocks"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "vcp", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener VCP Pattern",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/patterns/inside-bar")
+async def get_pk_inside_bar_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get Inside Bar pattern stocks"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "bullish_inside_bar", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Inside Bar Pattern",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/bullish-tomorrow")
+async def get_pk_bullish_tomorrow_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get stocks bullish for tomorrow using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "bullish_tomorrow", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Bullish For Tomorrow",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/macd-crossover")
+async def get_pk_macd_crossover_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get MACD crossover stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "macd_crossover", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener MACD Crossover",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/rsi-oversold")
+async def get_pk_rsi_oversold_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get RSI oversold stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "rsi_oversold", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener RSI Oversold",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/consolidating")
+async def get_pk_consolidating_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get consolidating stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "consolidating", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Consolidating Stocks",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/higher-highs")
+async def get_pk_higher_highs_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get Higher Highs & Higher Lows stocks using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "higher_highs", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Higher Highs/Lows",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pk/lorentzian")
+async def get_pk_lorentzian_stocks(
+    universe: str = Query("nifty50"),
+    limit: int = Query(30)
+):
+    """Get Lorentzian ML classifier signals using PKScreener"""
+    try:
+        if universe == "all":
+            symbols = get_all_nse_stocks()[:100]
+        elif universe == "nifty500":
+            symbols = get_nifty_500_stocks()[:100]
+        else:
+            symbols = get_nifty_50_stocks()
+        
+        results = scan_multiple_stocks(symbols, "lorentzian_buy", max_workers=10)
+        
+        return {
+            "success": True,
+            "feature": "PKScreener Lorentzian ML Classifier",
+            "universe": universe,
+            "count": len(results),
+            "results": results[:limit],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/swing-candidates")
 async def get_swing_candidates(
     limit: int = Query(30),
