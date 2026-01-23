@@ -313,7 +313,8 @@ function AIFeatureCard({ feature, onClick, isLoading }: { feature: any; onClick:
 function NiftyPredictionPanel({ data }: { data: any }) {
   if (!data) return null
   
-  const ensemble = data.ensemble || {}
+  // API returns prediction object directly, not ensemble
+  const prediction = data.prediction || {}
   
   return (
     <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border border-purple-500/30 rounded-xl p-6">
@@ -324,13 +325,26 @@ function NiftyPredictionPanel({ data }: { data: any }) {
       
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-gray-900/50 rounded-lg p-4">
-          <div className="text-gray-400 text-sm mb-1">Predicted Level</div>
-          <div className="text-2xl font-bold text-white">{ensemble.prediction?.toLocaleString()}</div>
+          <div className="text-gray-400 text-sm mb-1">Current Level</div>
+          <div className="text-2xl font-bold text-white">{data.current_level?.toLocaleString()}</div>
         </div>
         <div className="bg-gray-900/50 rounded-lg p-4">
           <div className="text-gray-400 text-sm mb-1">Direction</div>
-          <div className={`text-2xl font-bold ${ensemble.direction === 'UP' ? 'text-green-400' : 'text-red-400'}`}>
-            {ensemble.direction} {ensemble.direction === 'UP' ? '↑' : '↓'}
+          <div className={`text-2xl font-bold ${prediction.direction === 'BULLISH' ? 'text-green-400' : 'text-red-400'}`}>
+            {prediction.direction} {prediction.direction === 'BULLISH' ? '↑' : '↓'}
+          </div>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-gray-900/50 rounded-lg p-4">
+          <div className="text-gray-400 text-sm mb-1">Predicted Level</div>
+          <div className="text-xl font-bold text-white">{prediction.predicted_level?.toLocaleString()}</div>
+        </div>
+        <div className="bg-gray-900/50 rounded-lg p-4">
+          <div className="text-gray-400 text-sm mb-1">Change</div>
+          <div className={`text-xl font-bold ${(data.change_percent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {data.change_percent?.toFixed(2)}%
           </div>
         </div>
       </div>
@@ -338,12 +352,12 @@ function NiftyPredictionPanel({ data }: { data: any }) {
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-gray-400">Confidence</span>
-          <span className="text-white font-medium">{((ensemble.confidence || 0) * 100).toFixed(1)}%</span>
+          <span className="text-white font-medium">{((prediction.confidence || 0) * 100).toFixed(1)}%</span>
         </div>
         <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
-            style={{ width: `${(ensemble.confidence || 0) * 100}%` }}
+            style={{ width: `${(prediction.confidence || 0) * 100}%` }}
           />
         </div>
       </div>
