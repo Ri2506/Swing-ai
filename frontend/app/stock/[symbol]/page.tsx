@@ -49,132 +49,29 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Advanced Chart Widget - Embedded with CSP support
-function TradingViewWidget({ symbol, priceData }: { symbol: string; priceData?: any }) {
+// TradingView Advanced Real-Time Chart Widget - iframe embed method
+function TradingViewWidget({ symbol }: { symbol: string }) {
   const tvSymbol = `NSE:${symbol}`
-  const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
-  
-  useEffect(() => {
-    if (!containerRef.current) return
-    
-    setIsLoading(true)
-    setHasError(false)
-    
-    // Clear previous widget
-    containerRef.current.innerHTML = ''
-    
-    // Create widget container
-    const widgetContainer = document.createElement('div')
-    widgetContainer.className = 'tradingview-widget-container'
-    widgetContainer.style.height = '100%'
-    widgetContainer.style.width = '100%'
-    
-    const widgetDiv = document.createElement('div')
-    widgetDiv.id = `tradingview_${symbol}_${Date.now()}`
-    widgetDiv.style.height = '100%'
-    widgetDiv.style.width = '100%'
-    
-    widgetContainer.appendChild(widgetDiv)
-    containerRef.current.appendChild(widgetContainer)
-    
-    // Load TradingView widget script
-    const script = document.createElement('script')
-    script.src = 'https://s3.tradingview.com/tv.js'
-    script.async = true
-    
-    script.onload = () => {
-      try {
-        // @ts-ignore - TradingView global
-        if (window.TradingView) {
-          // @ts-ignore
-          new window.TradingView.widget({
-            "autosize": true,
-            "symbol": tvSymbol,
-            "interval": "D",
-            "timezone": "Asia/Kolkata",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": "#1a1a1a",
-            "enable_publishing": false,
-            "allow_symbol_change": true,
-            "container_id": widgetDiv.id,
-            "hide_top_toolbar": false,
-            "hide_legend": false,
-            "save_image": true,
-            "studies": [
-              "RSI@tv-basicstudies",
-              "MASimple@tv-basicstudies"
-            ],
-            "show_popup_button": true,
-            "popup_width": "1000",
-            "popup_height": "650"
-          })
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error('TradingView widget error:', err)
-        setHasError(true)
-        setIsLoading(false)
-      }
-    }
-    
-    script.onerror = () => {
-      setHasError(true)
-      setIsLoading(false)
-    }
-    
-    document.head.appendChild(script)
-    
-    return () => {
-      // Cleanup
-      if (script.parentNode) {
-        script.parentNode.removeChild(script)
-      }
-    }
-  }, [symbol])
-  
-  // Fallback UI if widget fails to load
-  if (hasError) {
-    return (
-      <div className="w-full" data-testid="tradingview-chart">
-        <div className="relative h-[500px] bg-gradient-to-b from-gray-800/50 to-gray-900/50 rounded-lg overflow-hidden flex items-center justify-center">
-          <div className="text-center p-6 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700">
-            <LineChart className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">{symbol} Chart</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Open advanced chart with indicators & drawing tools
-            </p>
-            <a 
-              href={`https://www.tradingview.com/chart/?symbol=${tvSymbol}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl text-sm font-semibold transition shadow-lg shadow-blue-500/25"
-            >
-              Open TradingView Chart
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </div>
-    )
-  }
   
   return (
     <div className="w-full" data-testid="tradingview-chart">
-      {/* Main TradingView Chart */}
+      {/* Main TradingView Chart - Using iframe embed widget */}
       <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
             <div className="text-center">
               <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">Loading chart...</p>
+              <p className="text-gray-400 text-sm">Loading TradingView chart...</p>
             </div>
           </div>
         )}
-        <div ref={containerRef} className="w-full h-full" />
+        <iframe
+          src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${encodeURIComponent(tvSymbol)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=RSI%40tv-basicstudies&theme=dark&style=1&timezone=Asia%2FKolkata&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=&utm_medium=widget&utm_campaign=chart&utm_term=${encodeURIComponent(tvSymbol)}`}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          allowFullScreen
+          onLoad={() => setIsLoading(false)}
+        />
       </div>
       
       {/* Additional chart links */}
