@@ -49,14 +49,77 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Advanced Real-Time Chart Widget - iframe embed method
+// TradingView Advanced Real-Time Chart Widget - Official Embed
 function TradingViewWidget({ symbol }: { symbol: string }) {
-  const tvSymbol = `NSE:${symbol}`
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+  
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    // Clear previous widget
+    containerRef.current.innerHTML = ''
+    setIsLoading(true)
+    
+    // Create container
+    const container = document.createElement('div')
+    container.className = 'tradingview-widget-container'
+    container.style.height = '100%'
+    container.style.width = '100%'
+    
+    // Create widget div
+    const widget = document.createElement('div')
+    widget.className = 'tradingview-widget-container__widget'
+    widget.style.height = 'calc(100% - 32px)'
+    widget.style.width = '100%'
+    
+    // Create copyright link
+    const copyright = document.createElement('div')
+    copyright.className = 'tradingview-widget-copyright'
+    copyright.innerHTML = '<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a>'
+    
+    container.appendChild(widget)
+    container.appendChild(copyright)
+    containerRef.current.appendChild(container)
+    
+    // Create and inject the TradingView script
+    const script = document.createElement('script')
+    script.type = 'text/javascript'
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
+    script.async = true
+    script.innerHTML = JSON.stringify({
+      "autosize": true,
+      "symbol": `NSE:${symbol}`,
+      "interval": "D",
+      "timezone": "Asia/Kolkata",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "allow_symbol_change": true,
+      "calendar": false,
+      "support_host": "https://www.tradingview.com"
+    })
+    
+    script.onload = () => setIsLoading(false)
+    script.onerror = () => setIsLoading(false)
+    
+    container.appendChild(script)
+    
+    // Add a small delay to hide loading after widget renders
+    setTimeout(() => setIsLoading(false), 3000)
+    
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
+    }
+  }, [symbol])
+  
+  const tvSymbol = `NSE:${symbol}`
   
   return (
     <div className="w-full" data-testid="tradingview-chart">
-      {/* Main TradingView Chart - Using iframe embed widget */}
+      {/* Main TradingView Chart */}
       <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
@@ -66,12 +129,7 @@ function TradingViewWidget({ symbol }: { symbol: string }) {
             </div>
           </div>
         )}
-        <iframe
-          src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${encodeURIComponent(tvSymbol)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=RSI%40tv-basicstudies&theme=dark&style=1&timezone=Asia%2FKolkata&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=&utm_medium=widget&utm_campaign=chart&utm_term=${encodeURIComponent(tvSymbol)}`}
-          style={{ width: '100%', height: '100%', border: 'none' }}
-          allowFullScreen
-          onLoad={() => setIsLoading(false)}
-        />
+        <div ref={containerRef} className="w-full h-full" />
       </div>
       
       {/* Additional chart links */}
