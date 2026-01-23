@@ -49,27 +49,98 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Widget - Opens external TradingView chart
+// TradingView Advanced Chart Widget - Embedded with CSP support
 function TradingViewWidget({ symbol, priceData }: { symbol: string; priceData?: any }) {
   const tvSymbol = `NSE:${symbol}`
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
   
-  return (
-    <div className="w-full" data-testid="tradingview-chart">
-      {/* Chart Preview with CTA */}
-      <div className="relative h-[400px] bg-gradient-to-b from-gray-800/50 to-gray-900/50 rounded-lg overflow-hidden">
-        {/* Mock chart bars - visual representation */}
-        <div className="absolute inset-0 flex items-end justify-center gap-1 p-8 opacity-30">
-          {[65, 45, 70, 55, 80, 60, 75, 50, 85, 65, 70, 55, 90, 75, 80, 70, 85, 60, 75, 80].map((h, i) => (
-            <div 
-              key={i} 
-              className={`w-4 rounded-t ${i % 2 === 0 ? 'bg-green-500' : 'bg-red-500'}`}
-              style={{ height: `${h}%` }}
-            />
-          ))}
-        </div>
-        
-        {/* Centered CTA */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    setIsLoading(true)
+    setHasError(false)
+    
+    // Clear previous widget
+    containerRef.current.innerHTML = ''
+    
+    // Create widget container
+    const widgetContainer = document.createElement('div')
+    widgetContainer.className = 'tradingview-widget-container'
+    widgetContainer.style.height = '100%'
+    widgetContainer.style.width = '100%'
+    
+    const widgetDiv = document.createElement('div')
+    widgetDiv.id = `tradingview_${symbol}_${Date.now()}`
+    widgetDiv.style.height = '100%'
+    widgetDiv.style.width = '100%'
+    
+    widgetContainer.appendChild(widgetDiv)
+    containerRef.current.appendChild(widgetContainer)
+    
+    // Load TradingView widget script
+    const script = document.createElement('script')
+    script.src = 'https://s3.tradingview.com/tv.js'
+    script.async = true
+    
+    script.onload = () => {
+      try {
+        // @ts-ignore - TradingView global
+        if (window.TradingView) {
+          // @ts-ignore
+          new window.TradingView.widget({
+            "autosize": true,
+            "symbol": tvSymbol,
+            "interval": "D",
+            "timezone": "Asia/Kolkata",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#1a1a1a",
+            "enable_publishing": false,
+            "allow_symbol_change": true,
+            "container_id": widgetDiv.id,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "save_image": true,
+            "studies": [
+              "RSI@tv-basicstudies",
+              "MASimple@tv-basicstudies"
+            ],
+            "show_popup_button": true,
+            "popup_width": "1000",
+            "popup_height": "650"
+          })
+          setIsLoading(false)
+        }
+      } catch (err) {
+        console.error('TradingView widget error:', err)
+        setHasError(true)
+        setIsLoading(false)
+      }
+    }
+    
+    script.onerror = () => {
+      setHasError(true)
+      setIsLoading(false)
+    }
+    
+    document.head.appendChild(script)
+    
+    return () => {
+      // Cleanup
+      if (script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
+  }, [symbol])
+  
+  // Fallback UI if widget fails to load
+  if (hasError) {
+    return (
+      <div className="w-full" data-testid="tradingview-chart">
+        <div className="relative h-[500px] bg-gradient-to-b from-gray-800/50 to-gray-900/50 rounded-lg overflow-hidden flex items-center justify-center">
           <div className="text-center p-6 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-700">
             <LineChart className="w-12 h-12 text-blue-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">{symbol} Chart</h3>
@@ -87,28 +158,36 @@ function TradingViewWidget({ symbol, priceData }: { symbol: string; priceData?: 
             </a>
           </div>
         </div>
-        
-        {/* Price overlay */}
-        {priceData && (
-          <div className="absolute top-4 left-4 bg-gray-900/80 backdrop-blur-sm rounded-lg p-3 border border-gray-700">
-            <div className="text-2xl font-bold text-white">
-              ₹{priceData.price?.toLocaleString('en-IN')}
-            </div>
-            <div className={`text-sm ${(priceData.change_percent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {(priceData.change_percent || 0) >= 0 ? '+' : ''}{priceData.change_percent?.toFixed(2)}%
+      </div>
+    )
+  }
+  
+  return (
+    <div className="w-full" data-testid="tradingview-chart">
+      {/* Main TradingView Chart */}
+      <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">Loading chart...</p>
             </div>
           </div>
         )}
-        
-        {/* Symbol badge */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 bg-gray-900/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-gray-700">
-          <span className="text-sm font-medium text-gray-300">NSE:{symbol}</span>
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-        </div>
+        <div ref={containerRef} className="w-full h-full" />
       </div>
       
       {/* Additional chart links */}
       <div className="mt-4 flex flex-wrap gap-3">
+        <a 
+          href={`https://www.tradingview.com/chart/?symbol=${tvSymbol}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm transition"
+        >
+          <ExternalLink className="w-4 h-4" />
+          Full Screen Chart
+        </a>
         <a 
           href={`https://www.tradingview.com/symbols/${tvSymbol}/technicals/`}
           target="_blank"
