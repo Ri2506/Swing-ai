@@ -261,12 +261,59 @@ export default function ScreenerPage() {
   const [activeTab, setActiveTab] = useState<'scanners' | 'ai'>('scanners')
   const [aiData, setAiData] = useState<any>(null)
   const [aiLoading, setAiLoading] = useState(false)
+  
+  // Real-time price updates
+  const [priceUpdateTime, setPriceUpdateTime] = useState<Date | null>(null)
 
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories()
     fetchWatchlist()
+    
+    // Auto-refresh AI Swing on load
+    runSwingCandidates()
   }, [])
+  
+  // Real-time price polling every 30 seconds
+  useEffect(() => {
+    if (results.length === 0) return
+    
+    const interval = setInterval(() => {
+      refreshPrices()
+    }, 30000) // Update every 30 seconds
+    
+    return () => clearInterval(interval)
+  }, [results])
+  
+  const refreshPrices = async () => {
+    if (results.length === 0) return
+    
+    try {
+      const symbols = results.map(r => r.symbol).join(',')
+      const res = await fetch(`${API_BASE}/api/screener/prices/live?symbols=${symbols}`)
+      const data = await res.json()
+      
+      if (data.success && data.prices) {
+        // Update results with new prices
+        setResults(prev => prev.map(stock => {
+          const newPrice = data.prices.find((p: any) => p.symbol === stock.symbol)
+          if (newPrice) {
+            return {
+              ...stock,
+              current_price: newPrice.price,
+              ltp: newPrice.price,
+              change_percent: newPrice.change_percent,
+              change: newPrice.change,
+            }
+          }
+          return stock
+        }))
+        setPriceUpdateTime(new Date())
+      }
+    } catch (error) {
+      console.error('Error refreshing prices:', error)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
