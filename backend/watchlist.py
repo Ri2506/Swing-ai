@@ -175,14 +175,14 @@ async def add_to_watchlist(request: AddToWatchlistRequest):
         if not price_data:
             raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
         
-        # Add to watchlist
-        result = db.table("watchlist").insert({
+        # Add to watchlist - simple insert without optional fields
+        # The table may not have notes/target/stop_loss columns
+        insert_data = {
             "user_id": request.user_id,
             "symbol": full_symbol,
-            "notes": request.notes,
-            "target_price": request.target_price,
-            "stop_loss": request.stop_loss,
-        }).execute()
+        }
+        
+        result = db.table("watchlist").insert(insert_data).execute()
         
         return {
             "success": True,
