@@ -11,9 +11,8 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3,
   Bookmark, BookmarkCheck, RefreshCw, Clock, ExternalLink,
-  ArrowUpRight, ArrowDownRight, Target, AlertTriangle,
-  ChevronUp, ChevronDown, LineChart, PieChart, Layers,
-  Zap, Shield, Eye, Bell, Share2
+  ArrowUpRight, ArrowDownRight, Target,
+  LineChart, Layers, Zap
 } from 'lucide-react'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
