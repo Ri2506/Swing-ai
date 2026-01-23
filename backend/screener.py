@@ -1317,22 +1317,28 @@ async def get_single_price(symbol: str):
 @router.get("/prices/{symbol}/history")
 async def get_price_history(
     symbol: str,
-    period: str = Query("1m", description="Time period: 1w, 1m, 3m, 1y")
+    period: str = Query("1y", description="Time period: 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y")
 ):
     """Get historical price data for charting"""
     try:
         full_symbol = f"{symbol.upper()}.NS"
         ticker = yf.Ticker(full_symbol)
         
-        # Map period to yfinance format
+        # Map period to yfinance format (period, interval)
         period_map = {
-            "1w": ("7d", "1h"),
-            "1m": ("1mo", "1d"),
-            "3m": ("3mo", "1d"),
-            "1y": ("1y", "1d"),
+            "5d": ("5d", "15m"),      # 5 days, 15min candles
+            "1w": ("7d", "1h"),       # 1 week, hourly candles
+            "1mo": ("1mo", "1d"),     # 1 month, daily candles
+            "1m": ("1mo", "1d"),      # Alias for 1mo
+            "3m": ("3mo", "1d"),      # 3 months, daily
+            "3mo": ("3mo", "1d"),     # Alias
+            "6mo": ("6mo", "1d"),     # 6 months, daily
+            "1y": ("1y", "1d"),       # 1 year, daily
+            "2y": ("2y", "1wk"),      # 2 years, weekly
+            "5y": ("5y", "1wk"),      # 5 years, weekly
         }
         
-        yf_period, interval = period_map.get(period.lower(), ("1mo", "1d"))
+        yf_period, interval = period_map.get(period.lower(), ("1y", "1d"))
         data = ticker.history(period=yf_period, interval=interval)
         
         if data.empty:
@@ -1353,6 +1359,7 @@ async def get_price_history(
             "success": True,
             "symbol": symbol.upper(),
             "period": period,
+            "interval": interval,
             "history": history,
             "data_points": len(history)
         }
