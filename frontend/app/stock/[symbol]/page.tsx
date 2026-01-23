@@ -52,10 +52,11 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Embedded Advanced Chart Widget
+// TradingView Embedded Advanced Chart Widget - Using tv.js
 function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const widgetId = `tradingview_${symbol}_${Date.now()}`
   
   useEffect(() => {
     if (!containerRef.current) return
@@ -64,50 +65,59 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     containerRef.current.innerHTML = ''
     setIsLoading(true)
     
-    // Create container for the widget
-    const widgetContainer = document.createElement('div')
-    widgetContainer.className = 'tradingview-widget-container'
-    widgetContainer.style.height = '100%'
-    widgetContainer.style.width = '100%'
-    
+    // Create widget container div
     const widgetDiv = document.createElement('div')
-    widgetDiv.className = 'tradingview-widget-container__widget'
-    widgetDiv.style.height = 'calc(100% - 32px)'
+    widgetDiv.id = widgetId
+    widgetDiv.style.height = '100%'
     widgetDiv.style.width = '100%'
+    containerRef.current.appendChild(widgetDiv)
     
-    const copyright = document.createElement('div')
-    copyright.className = 'tradingview-widget-copyright'
-    copyright.innerHTML = `<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a>`
-    
-    widgetContainer.appendChild(widgetDiv)
-    widgetContainer.appendChild(copyright)
-    containerRef.current.appendChild(widgetContainer)
-    
-    // Create and load the TradingView script
-    // Try BSE (Bombay Stock Exchange) which may have better embed support
-    const script = document.createElement('script')
-    script.type = 'text/javascript'
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      "autosize": true,
-      "symbol": `BSE:${symbol}`,
-      "interval": "D",
-      "timezone": "Asia/Kolkata",
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "allow_symbol_change": true,
-      "calendar": false,
-      "studies": ["STD;RSI"],
-      "support_host": "https://www.tradingview.com"
-    })
-    
-    script.onload = () => {
-      setTimeout(() => setIsLoading(false), 2000)
+    // Check if TradingView is already loaded
+    // @ts-ignore
+    if (window.TradingView) {
+      createWidget()
+    } else {
+      // Load tv.js script
+      const script = document.createElement('script')
+      script.src = 'https://s3.tradingview.com/tv.js'
+      script.async = true
+      script.onload = createWidget
+      script.onerror = () => {
+        setIsLoading(false)
+        console.error('Failed to load TradingView script')
+      }
+      document.head.appendChild(script)
     }
     
-    widgetContainer.appendChild(script)
+    function createWidget() {
+      try {
+        // @ts-ignore
+        new window.TradingView.widget({
+          "autosize": true,
+          "symbol": `NSE:${symbol}`,
+          "interval": "D",
+          "timezone": "Asia/Kolkata",
+          "theme": "dark",
+          "style": "1",
+          "locale": "en",
+          "toolbar_bg": "#1a1a2e",
+          "enable_publishing": false,
+          "allow_symbol_change": true,
+          "hide_top_toolbar": false,
+          "hide_legend": false,
+          "save_image": true,
+          "container_id": widgetId,
+          "studies": [
+            "RSI@tv-basicstudies",
+            "MASimple@tv-basicstudies"
+          ]
+        })
+        setTimeout(() => setIsLoading(false), 2000)
+      } catch (err) {
+        console.error('TradingView widget error:', err)
+        setIsLoading(false)
+      }
+    }
     
     return () => {
       if (containerRef.current) {
