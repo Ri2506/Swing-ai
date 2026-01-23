@@ -107,8 +107,8 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         
         chartRef.current = chart
         
-        // Add candlestick series - v5 uses addSeries with type
-        const candleSeries = chart.addSeries(LWC.CandlestickSeries, {
+        // Add candlestick series - use addCandlestickSeries method
+        const candleSeries = chart.addCandlestickSeries({
           upColor: '#22c55e',
           downColor: '#ef4444',
           borderUpColor: '#22c55e',
@@ -119,7 +119,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         candleSeriesRef.current = candleSeries
         
         // Add volume histogram
-        const volumeSeries = chart.addSeries(LWC.HistogramSeries, {
+        const volumeSeries = chart.addHistogramSeries({
           priceFormat: { type: 'volume' },
           priceScaleId: 'volume',
         })
