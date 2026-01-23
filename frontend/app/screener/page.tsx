@@ -683,21 +683,37 @@ export default function ScreenerPage() {
                               {new Date(lastUpdated).toLocaleTimeString()}
                             </span>
                           )}
+                          {priceUpdateTime && (
+                            <span className="flex items-center gap-1 text-green-400">
+                              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                              Live • {priceUpdateTime.toLocaleTimeString()}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <h2 className="text-xl font-bold text-white">Select a Scanner</h2>
-                        <p className="text-sm text-gray-500 mt-1">Choose from {totalScanners} professional scanners</p>
+                        <h2 className="text-xl font-bold text-white">AI Swing Candidates</h2>
+                        <p className="text-sm text-gray-500 mt-1">{results.length} stocks • Real-time prices</p>
                       </div>
                     )}
                   </div>
                   
-                  {selectedScanner && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => runScan(selectedScanner)}
-                      disabled={loading}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm disabled:opacity-50"
+                      onClick={refreshPrices}
+                      disabled={loading || results.length === 0}
+                      className="flex items-center gap-2 px-3 py-2 bg-green-500/20 hover:bg-green-500/30 rounded-lg text-sm text-green-400 disabled:opacity-50"
+                      title="Refresh prices"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Live
+                    </button>
+                    {selectedScanner && (
+                      <button
+                        onClick={() => runScan(selectedScanner)}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm disabled:opacity-50"
                     >
                       <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                       Refresh
