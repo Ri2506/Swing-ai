@@ -1157,6 +1157,96 @@ async def get_available_scanners():
 
 
 # ============================================================
+# 📊 STOCK UNIVERSE MANAGEMENT
+# ============================================================
+
+@router.get("/stocks/universe")
+async def get_stock_universe():
+    """
+    Get complete stock universe with auto-update info.
+    Stock list auto-refreshes from NSE every 24 hours.
+    """
+    all_stocks = get_all_nse_stocks()
+    
+    return {
+        "success": True,
+        "total_stocks": len(all_stocks),
+        "universes": {
+            "nifty50": {
+                "name": "Nifty 50",
+                "count": 50,
+                "description": "Top 50 blue-chip stocks"
+            },
+            "nifty500": {
+                "name": "Top 200",
+                "count": len(get_nifty_500_stocks()),
+                "description": "Most actively traded stocks"
+            },
+            "all": {
+                "name": "All NSE",
+                "count": len(all_stocks),
+                "description": "Complete NSE equity universe"
+            }
+        },
+        "last_updated": _STOCK_LIST_CACHE.get("last_updated"),
+        "auto_refresh": "Every 24 hours from NSE",
+        "sample_stocks": all_stocks[:20]
+    }
+
+
+@router.post("/stocks/refresh")
+async def refresh_stock_universe():
+    """
+    Force refresh stock list from NSE.
+    Use this when new stocks are listed.
+    """
+    try:
+        old_count = len(get_all_nse_stocks())
+        new_list = refresh_nse_stock_list()
+        new_count = len(new_list)
+        
+        added = new_count - old_count
+        
+        return {
+            "success": True,
+            "message": f"Stock list refreshed from NSE",
+            "previous_count": old_count,
+            "current_count": new_count,
+            "new_stocks_added": added if added > 0 else 0,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/stocks/search")
+async def search_stocks(
+    query: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(20, description="Max results")
+):
+    """Search stocks by symbol or partial match"""
+    try:
+        all_stocks = get_all_nse_stocks()
+        query_upper = query.upper()
+        
+        # Exact matches first, then prefix matches, then contains
+        exact = [s for s in all_stocks if s == query_upper]
+        prefix = [s for s in all_stocks if s.startswith(query_upper) and s != query_upper]
+        contains = [s for s in all_stocks if query_upper in s and s not in exact and s not in prefix]
+        
+        results = exact + prefix + contains
+        
+        return {
+            "success": True,
+            "query": query,
+            "count": len(results[:limit]),
+            "results": results[:limit]
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+# ============================================================
 # 📊 REAL-TIME PRICE UPDATES
 # ============================================================
 
