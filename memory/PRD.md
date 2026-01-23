@@ -15,7 +15,7 @@ Build a cutting-edge, institutional-grade AI swing trading platform for the Indi
 - **Backend**: FastAPI (Python), WebSocket
 - **Database**: Supabase (PostgreSQL)
 - **Data**: yfinance, nsepython, pkscreener
-- **Charts**: TradingView embedded widget (BSE format), Custom recharts AreaChart
+- **Charts**: TradingView Advanced Chart Widget (BSE format)
 
 ---
 
@@ -29,11 +29,12 @@ Build a cutting-edge, institutional-grade AI swing trading platform for the Indi
   - Trend (Strong Up/Weak Up/Down)
   - RSI (14) with Oversold/Overbought labels
   - Volume ratio vs 20-day average
-- **TradingView Real-time Chart** (NEW - WORKING):
+- **TradingView Real-time Chart** ✅ WORKING:
   - Full candlestick chart with volume bars
   - RSI indicator integrated
-  - Uses BSE: symbol format (NSE format blocked in embeds)
+  - Uses BSE: symbol format (TradingView embed)
   - All TradingView tools: timeframes, indicators, drawings
+  - Note: Shows BSE data (same stocks as NSE)
 - **Price Overview Chart**:
   - Custom recharts AreaChart with yfinance historical data
   - Timeframe buttons: 1W, 1M, 3M, 1Y
