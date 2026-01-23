@@ -714,11 +714,12 @@ export default function ScreenerPage() {
                         onClick={() => runScan(selectedScanner)}
                         disabled={loading}
                         className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm disabled:opacity-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </button>
-                  )}
+                      >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        Rescan
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Loading */}
