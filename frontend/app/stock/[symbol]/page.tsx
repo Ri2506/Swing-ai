@@ -50,44 +50,21 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Widget Component
+// TradingView Widget Component - Using iframe for reliability
 function TradingViewWidget({ symbol }: { symbol: string }) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const tvSymbol = `NSE:${symbol}`
   
-  useEffect(() => {
-    if (!containerRef.current) return
-    
-    // Clear previous widget
-    containerRef.current.innerHTML = ''
-    
-    // Create TradingView widget script
-    const script = document.createElement('script')
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
-    script.type = 'text/javascript'
-    script.async = true
-    script.innerHTML = JSON.stringify({
-      "autosize": true,
-      "symbol": `NSE:${symbol}`,
-      "interval": "D",
-      "timezone": "Asia/Kolkata",
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "enable_publishing": false,
-      "backgroundColor": "rgba(0, 0, 0, 1)",
-      "gridColor": "rgba(42, 46, 57, 0.5)",
-      "hide_top_toolbar": false,
-      "hide_legend": false,
-      "save_image": true,
-      "calendar": false,
-      "hide_volume": false,
-      "support_host": "https://www.tradingview.com",
-      "studies": [
-        "RSI@tv-basicstudies",
-        "MASimple@tv-basicstudies",
-        "MACD@tv-basicstudies"
-      ]
-    })
+  return (
+    <div className="w-full h-full min-h-[500px]" data-testid="tradingview-chart">
+      <iframe
+        src={`https://www.tradingview.com/widgetembed/?frameElementId=tradingview_chart&symbol=${tvSymbol}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=1a1a1a&studies=RSI%40tv-basicstudies%2CMACD%40tv-basicstudies&theme=dark&style=1&timezone=Asia%2FKolkata&withdateranges=1&showpopupbutton=1&studies_overrides=%7B%7D&overrides=%7B%22mainSeriesProperties.candleStyle.upColor%22%3A%22%2322c55e%22%2C%22mainSeriesProperties.candleStyle.downColor%22%3A%22%23ef4444%22%7D&enabled_features=study_templates&disabled_features=&locale=en&utm_source=localhost`}
+        className="w-full h-full border-0"
+        style={{ minHeight: '500px' }}
+        allowFullScreen
+        loading="lazy"
+      />
+    </div>
+  )
     
     const widgetContainer = document.createElement('div')
     widgetContainer.className = 'tradingview-widget-container'
