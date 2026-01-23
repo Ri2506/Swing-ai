@@ -252,7 +252,7 @@ export default function ScreenerPage() {
   
   // Watchlist state
   const [watchlist, setWatchlist] = useState<string[]>([])
-  const [userId] = useState('demo-user-123') // Replace with real user ID from auth
+  const [userId] = useState('ffb9e2ca-6733-4e84-9286-0aa134e6f57e') // Test user - replace with real auth
   
   // Chart state
   const [chartSymbol, setChartSymbol] = useState<string | null>(null)
