@@ -202,9 +202,15 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         if (volumeSeriesRef.current) {
           volumeSeriesRef.current.setData(volumes)
         }
-        if (chartRef.current) {
-          chartRef.current.timeScale().fitContent()
-        }
+        
+        // Force chart to render with timeout
+        setTimeout(() => {
+          if (chartRef.current) {
+            chartRef.current.timeScale().fitContent()
+            // Also try triggering a resize to force redraw
+            chartRef.current.applyOptions({})
+          }
+        }, 100)
       }
     } catch (err) {
       console.error('Fetch error:', err)
