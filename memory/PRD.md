@@ -15,7 +15,7 @@ Build a cutting-edge, institutional-grade AI swing trading platform for the Indi
 - **Backend**: FastAPI (Python), WebSocket
 - **Database**: Supabase (PostgreSQL)
 - **Data**: yfinance, nsepython, pkscreener
-- **Charts**: Custom recharts AreaChart (TradingView embed not supported for NSE)
+- **Charts**: TradingView embedded widget (BSE format), Custom recharts AreaChart
 
 ---
 
@@ -29,17 +29,27 @@ Build a cutting-edge, institutional-grade AI swing trading platform for the Indi
   - Trend (Strong Up/Weak Up/Down)
   - RSI (14) with Oversold/Overbought labels
   - Volume ratio vs 20-day average
-- **Interactive Price Chart** (NEW):
+- **TradingView Real-time Chart** (NEW - WORKING):
+  - Full candlestick chart with volume bars
+  - RSI indicator integrated
+  - Uses BSE: symbol format (NSE format blocked in embeds)
+  - All TradingView tools: timeframes, indicators, drawings
+- **Price Overview Chart**:
   - Custom recharts AreaChart with yfinance historical data
   - Timeframe buttons: 1W, 1M, 3M, 1Y
   - Dynamic colors: Green for uptrend, Red for downtrend
-  - Hover tooltips with price data
 - Key Levels section (52W High/Low, SMA 20, SMA 50)
 - MACD Analysis section with crossover signals
-- Prominent "Advanced Chart" button to TradingView
+- Watchlist toggle (Watch/Watching) - WORKING
 - Links: Technical Analysis, Financials, Screener.in
-- Watchlist toggle (Watch/Watching)
 - Paper Trade and Back to Screener navigation
+
+### Watchlist Feature ✅ WORKING
+- Per-user watchlist with real-time prices
+- Add/Remove stocks from stock detail page
+- Watchlist page with summary stats (Total, Gainers, Losers, Avg Price)
+- Search and add stocks functionality
+- Target price and notes support
 
 ### WebSocket Real-time Updates ✅
 - `/ws/prices/{client_id}` endpoint
