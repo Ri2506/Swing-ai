@@ -1,125 +1,190 @@
 # SwingAI - Product Requirements Document
 
 ## Original Problem Statement
-Build a cutting-edge, institutional-grade homepage for SwingAI, an AI swing trading platform for the Indian stock market (NSE/BSE). The platform should clone the design/layout of intellectia.ai but adapted for SwingAI branding with real backend data.
+Build a cutting-edge, institutional-grade AI swing trading platform for the Indian stock market (NSE). The platform should be inspired by intellectia.ai with real backend data featuring:
+1. **Full-Featured Screener** - All 40+ scanners from pkscreener library
+2. **Paper Trading** - Virtual trading with ₹10 Lakh starting capital
+3. **AI Intelligence** - ML-powered market analysis and predictions
+4. **SwingAI Bot** (Future) - Custom AI model integration for BUY/NO_TRADE signals
 
 ## Core Requirements
 - Full-stack application with Next.js frontend + FastAPI backend
 - Dark theme with professional gradient text effects
-- AI-focused marketing terminology throughout
-- Real-time market data for NSE/BSE stocks
-- Risk Management & Position Sizing calculators
-- Stock screener and signal generation
+- Real-time market data from yfinance and nsepython
+- Integration with pkscreener library for all AI/ML scanning features
+- Paper trading with virtual capital and realistic brokerage simulations
+- Supabase for database and Google Authentication
 
 ## User Personas
 1. **Retail Swing Traders** - Part-time traders looking for AI-powered signals
 2. **Professional Traders** - Full-time traders seeking institutional-grade tools
 3. **Investment Analysts** - Professionals validating AI recommendations
 
-## What's Been Implemented (Dec 2025)
+---
+
+## What's Been Implemented (January 2025)
+
+### PKScreener Full Integration ✅ COMPLETE
+- **61 scanners** across **11 categories**:
+  - Breakout (6 scanners)
+  - Momentum (6 scanners)
+  - Reversal (8 scanners)
+  - Chart Patterns (8 scanners)
+  - Moving Average Signals (7 scanners)
+  - Technical (7 scanners)
+  - Buy/Sell Signals (6 scanners)
+  - Consolidation (3 scanners)
+  - Trend (4 scanners)
+  - Machine Learning (3 scanners)
+  - Short Sell (3 scanners)
+
+### Backend APIs (All Working with Real Data)
+
+#### Screener APIs
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/screener/pk/categories` | GET | All 11 scanner categories with 61 scanners |
+| `/api/screener/pk/scanners` | GET | Flat list of all scanners |
+| `/api/screener/pk/scan/batch` | POST | Run scanner on stock universe |
+| `/api/screener/pk/scan/single` | POST | Run scanner on single stock |
+| `/api/screener/pk/strong-buy` | GET | Strong buy signals |
+| `/api/screener/pk/strong-sell` | GET | Strong sell signals |
+| `/api/screener/pk/breakouts` | GET | Breakout detection |
+| `/api/screener/pk/reversals` | GET | Reversal candidates |
+| `/api/screener/pk/momentum` | GET | High momentum stocks |
+| `/api/screener/pk/patterns/vcp` | GET | VCP pattern detection |
+| `/api/screener/pk/patterns/inside-bar` | GET | Inside bar patterns |
+| `/api/screener/pk/bullish-tomorrow` | GET | Bullish for tomorrow |
+| `/api/screener/pk/macd-crossover` | GET | MACD crossover signals |
+| `/api/screener/pk/rsi-oversold` | GET | RSI oversold stocks |
+| `/api/screener/pk/consolidating` | GET | Consolidating stocks |
+| `/api/screener/pk/higher-highs` | GET | Higher highs/lows pattern |
+| `/api/screener/pk/lorentzian` | GET | ML Lorentzian classifier |
+
+#### AI Intelligence APIs
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/screener/ai/nifty-prediction` | GET | AI Nifty direction prediction |
+| `/api/screener/ai/market-regime` | GET | Market regime analysis |
+| `/api/screener/ai/trend-analysis` | GET | Trend categorization |
+| `/api/screener/ai/momentum-radar` | GET | High momentum detection |
+| `/api/screener/ai/breakout-scanner` | GET | AI breakout prediction |
+| `/api/screener/ai/reversal-scanner` | GET | AI reversal detection |
+
+#### Paper Trading APIs
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/paper/portfolio/{user_id}` | GET | User's paper portfolio |
+| `/api/paper/order` | POST | Execute paper trade |
+| `/api/paper/orders/{user_id}` | GET | User's order history |
+| `/api/paper/price/{symbol}` | GET | Real-time stock price |
+| `/api/paper/reset/{user_id}` | POST | Reset paper account |
+
+#### Auth APIs (Pending User DB Setup)
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/google/login` | GET | Initiate Google login |
+| `/api/auth/google/callback` | GET | Google OAuth callback |
 
 ### Frontend Pages (All Working)
-- [x] Landing Page (`/`) - Hero, features, pricing, testimonials, FAQ
-- [x] Dashboard (`/dashboard`) - Market indices, AI Top Picks, Top Gainers/Losers
-- [x] AI Screener (`/screener`) - Stock screening with filters
-- [x] Signals (`/signals`) - AI trading signals with entry/target/stop
-- [x] Stocks (`/stocks`) - Stock list with prices and AI scores
-- [x] Portfolio (`/portfolio`) - Holdings with P&L tracking
-- [x] Trades (`/trades`) - Trade history with win/loss tracking
-- [x] Analytics (`/analytics`) - Performance metrics and charts
-- [x] Settings (`/settings`) - Profile and risk management settings
-- [x] Pricing (`/pricing`) - Subscription tiers
-- [x] Login/Signup pages
+- [x] Landing Page (`/`) - Hero, features, pricing
+- [x] Dashboard (`/dashboard`) - Market overview
+- [x] **AI Market Screener (`/screener`)** - 43+ scanners with real data ✅
+- [x] AI Intelligence (`/ai-intelligence`) - AI features display
+- [x] Paper Trading (`/paper-trading`) - Virtual trading
+- [x] Signals (`/signals`) - AI trading signals
+- [x] Stocks (`/stocks`) - Stock list
+- [x] Login (`/login`) - Google authentication
 
-### Backend APIs (Working with Mock Data)
-- [x] `/api/health` - Health check
-- [x] `/api/market/overview` - Market indices (NIFTY, SENSEX, BANKNIFTY)
-- [x] `/api/market/stocks` - Stock list with prices
-- [x] `/api/market/stocks/{symbol}` - Individual stock details
-- [x] `/api/market/trending` - AI trending picks
-- [x] `/api/market/top-movers` - Gainers and losers
-- [x] `/api/market/sectors` - Sector performance
+### Database (Supabase)
+- [x] `users` - User accounts
+- [x] `paper_orders` - Paper trade orders
+- [x] `paper_holdings` - Paper portfolio holdings
+- [x] `watchlist` - User watchlists
+- [x] `signals` - AI generated signals
+- [ ] `user_sessions` - Session management (PENDING USER ACTION)
 
-### UI/UX Features
-- [x] Dark theme enforced (no light mode toggle)
-- [x] Animated gradient text effects
-- [x] Responsive design
-- [x] Position Sizing Calculator modal
-- [x] Risk Management Calculator modal
-- [x] Quick Access dropdown menu
+---
 
 ## Tech Stack
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, Framer Motion
 - **Backend**: FastAPI (Python), uvicorn
-- **Database**: MongoDB (configured but not actively used)
-- **UI Components**: Shadcn/UI, Radix UI, Lucide React icons
-
-## Known Limitations (MOCKED)
-1. **All market data is MOCK data** - Backend returns hardcoded stock prices
-2. **No real authentication** - Supabase code exists but is disabled
-3. **No real trade execution** - Signals are for display only
-4. **No real portfolio tracking** - All positions are mock data
-
-## Prioritized Backlog
-
-### P0 - Critical (Needed for MVP)
-1. [ ] Integrate real Indian market data API (Yahoo Finance or NSE APIs)
-2. [ ] Connect frontend to real backend APIs (replace mock data)
-3. [ ] Implement user authentication (JWT or Supabase)
-
-### P1 - High Priority
-1. [ ] Add TradingView/Lightweight Charts for stock analysis
-2. [ ] Real-time WebSocket data updates
-3. [ ] User portfolio persistence in MongoDB
-4. [ ] Trade history storage and retrieval
-
-### P2 - Nice to Have
-1. [ ] Email notifications for signals
-2. [ ] Mobile-responsive optimization
-3. [ ] PDF report generation
-4. [ ] Backtesting module
-
-## API Endpoints Reference
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check |
-| `/api/market/overview` | GET | Market indices |
-| `/api/market/stocks` | GET | All stocks with prices |
-| `/api/market/stocks/{symbol}` | GET | Stock details |
-| `/api/market/trending` | GET | Trending stocks |
-| `/api/market/top-movers` | GET | Top gainers/losers |
-| `/api/market/sectors` | GET | Sector performance |
+- **Database**: Supabase (PostgreSQL)
+- **Data Sources**: yfinance, nsepython, pkscreener
+- **Auth**: Emergent-managed Google OAuth
 
 ## Architecture
 ```
 /app
 ├── backend/
-│   ├── server.py        # FastAPI entry point
-│   ├── market_data.py   # Market data router (MOCK)
-│   └── .env             # Backend config
+│   ├── server.py           # FastAPI entry point
+│   ├── screener.py         # Screener APIs with PKScreener integration
+│   ├── pkscreener_service.py # PKScreener wrapper service
+│   ├── paper_trading.py    # Paper trading APIs
+│   ├── auth.py             # Google OAuth APIs
+│   ├── users.py            # User management
+│   ├── market_data.py      # Market data APIs
+│   └── database.py         # Supabase connection
 ├── frontend/
-│   ├── app/             # Next.js pages
-│   │   ├── (platform)/  # Dashboard route group
-│   │   ├── signals/     # Signals pages
-│   │   ├── stocks/      # Stock pages
-│   │   └── ...
-│   ├── components/      # React components
-│   └── .env             # Frontend config
+│   ├── app/
+│   │   ├── screener/       # AI Market Screener page
+│   │   ├── (platform)/     # Dashboard route group
+│   │   │   ├── ai-intelligence/
+│   │   │   ├── paper-trading/
+│   │   │   └── layout.tsx
+│   │   ├── login/          # Google login page
+│   │   └── auth/callback/  # OAuth callback
+│   ├── components/         # React components
+│   └── .env                # Frontend config with Supabase keys
 └── memory/
-    └── PRD.md           # This file
+    └── PRD.md              # This file
 ```
 
-## Environment Variables Required
-```bash
-# Frontend (.env)
-REACT_APP_BACKEND_URL=<preview_url>
-NEXT_PUBLIC_API_URL=<preview_url>
+---
 
-# Backend (.env)
-MONGO_URL=<mongodb_connection_string>
-DB_NAME=swingai
-```
+## Prioritized Backlog
+
+### P0 - Critical ✅ DONE
+- [x] PKScreener full integration (61 scanners, 11 categories)
+- [x] Real market data from yfinance
+- [x] All NSE stocks via nsepython (2229 stocks)
+- [x] Paper trading MVP
+
+### P1 - High Priority
+- [ ] **Complete Google Auth** - User needs to create `user_sessions` table in Supabase
+- [ ] Frontend for all 61 PKScreener scanners - Currently shows 43+ but can be expanded
+- [ ] Comprehensive scanner testing
+
+### P2 - Medium Priority
+- [ ] TradingView/Lightweight Charts integration
+- [ ] Real-time WebSocket updates
+- [ ] Email notifications for signals
+
+### P3 - Future Tasks
+- [ ] **SwingAI Bot Integration** - User's custom AI model for BUY/NO_TRADE signals
+- [ ] Broker API integration (Zerodha, Upstox) for auto-trading
+- [ ] PDF report generation
+- [ ] Backtesting module
+
+---
+
+## Pending User Actions
+1. **Create `user_sessions` table in Supabase** - Required for Google Auth to work
+   ```sql
+   CREATE TABLE user_sessions (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     user_id UUID REFERENCES users(id),
+     session_token TEXT UNIQUE NOT NULL,
+     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+   ```
+
+---
+
+## Test Reports
+- `/app/test_reports/iteration_1.json` - PKScreener integration tests (33/33 passed)
+- `/app/backend/tests/test_pkscreener_api.py` - Backend API tests
 
 ## Last Updated
-January 2025
+January 23, 2025
