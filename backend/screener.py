@@ -1115,6 +1115,74 @@ async def get_available_scanners():
 
 
 # ============================================================
+# 📊 REAL-TIME PRICE UPDATES
+# ============================================================
+
+@router.get("/prices/live")
+async def get_live_prices(
+    symbols: str = Query(..., description="Comma-separated symbols"),
+):
+    """
+    Get real-time prices for multiple stocks.
+    Used for live price updates on frontend.
+    """
+    try:
+        symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+        
+        if not symbol_list:
+            return {"success": False, "error": "No symbols provided"}
+        
+        if len(symbol_list) > 50:
+            symbol_list = symbol_list[:50]  # Limit to 50
+        
+        from pkscreener_service import get_live_prices_batch
+        prices = get_live_prices_batch(symbol_list)
+        
+        return {
+            "success": True,
+            "count": len(prices),
+            "prices": prices,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/prices/{symbol}")
+async def get_single_price(symbol: str):
+    """Get real-time price for a single stock"""
+    try:
+        full_symbol = f"{symbol.upper()}.NS"
+        ticker = yf.Ticker(full_symbol)
+        data = ticker.history(period="1d", interval="1m")
+        
+        if data.empty:
+            raise HTTPException(status_code=404, detail="Stock not found")
+        
+        current = float(data['Close'].iloc[-1])
+        open_price = float(data['Open'].iloc[0])
+        change = current - open_price
+        change_pct = (change / open_price * 100) if open_price > 0 else 0
+        
+        return {
+            "success": True,
+            "symbol": symbol.upper(),
+            "price": round(current, 2),
+            "change": round(change, 2),
+            "change_percent": round(change_pct, 2),
+            "open": round(open_price, 2),
+            "high": round(float(data['High'].max()), 2),
+            "low": round(float(data['Low'].min()), 2),
+            "volume": int(data['Volume'].sum()),
+            "timestamp": datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
 # 🤖 PKSCREENER AI ENDPOINTS
 # ============================================================
 
