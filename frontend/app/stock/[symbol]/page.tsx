@@ -52,9 +52,88 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView-style Candlestick Chart using Recharts + TradingView Link
-// Since TradingView embed doesn't support NSE data, we show our own chart with yfinance data
-function TradingViewWidget({ symbol, priceData }: { symbol: string; priceData: StockData | null }) {
+// TradingView Embedded Advanced Chart Widget
+function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    // Clear previous widget
+    containerRef.current.innerHTML = ''
+    setIsLoading(true)
+    
+    // Create container for the widget
+    const widgetContainer = document.createElement('div')
+    widgetContainer.className = 'tradingview-widget-container'
+    widgetContainer.style.height = '100%'
+    widgetContainer.style.width = '100%'
+    
+    const widgetDiv = document.createElement('div')
+    widgetDiv.className = 'tradingview-widget-container__widget'
+    widgetDiv.style.height = 'calc(100% - 32px)'
+    widgetDiv.style.width = '100%'
+    
+    const copyright = document.createElement('div')
+    copyright.className = 'tradingview-widget-copyright'
+    copyright.innerHTML = `<a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a>`
+    
+    widgetContainer.appendChild(widgetDiv)
+    widgetContainer.appendChild(copyright)
+    containerRef.current.appendChild(widgetContainer)
+    
+    // Create and load the TradingView script
+    const script = document.createElement('script')
+    script.type = 'text/javascript'
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
+    script.async = true
+    script.innerHTML = JSON.stringify({
+      "autosize": true,
+      "symbol": `NSE:${symbol}`,
+      "interval": "D",
+      "timezone": "Asia/Kolkata",
+      "theme": "dark",
+      "style": "1",
+      "locale": "en",
+      "allow_symbol_change": true,
+      "calendar": false,
+      "studies": ["STD;RSI"],
+      "support_host": "https://www.tradingview.com"
+    })
+    
+    script.onload = () => {
+      setTimeout(() => setIsLoading(false), 2000)
+    }
+    
+    widgetContainer.appendChild(script)
+    
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
+      }
+    }
+  }, [symbol])
+  
+  return (
+    <div className="w-full" data-testid="tradingview-advanced-chart">
+      <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
+            <div className="text-center">
+              <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-2" />
+              <p className="text-gray-400 text-sm">Loading TradingView...</p>
+            </div>
+          </div>
+        )}
+        <div ref={containerRef} className="w-full h-full" />
+      </div>
+    </div>
+  )
+}
+
+// Custom Price Chart using Recharts with yfinance data
+function PriceChart({ symbol, priceData }: { symbol: string; priceData: StockData | null }) {
   const [chartData, setChartData] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [timeframe, setTimeframe] = useState('1M')
