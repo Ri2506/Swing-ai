@@ -592,40 +592,9 @@ export default function StockDetailPage() {
           </div>
         </div>
         
-        {/* TradingView Advanced Real-time Chart */}
-        <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <LineChart className="w-5 h-5 text-blue-400" />
-              <h2 className="font-semibold">TradingView Real-time Chart</h2>
-              <span className="text-xs px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full">Live</span>
-            </div>
-            <a 
-              href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-            >
-              Open Full Chart <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          <div className="p-4">
-            <TradingViewAdvancedChart symbol={symbol} />
-          </div>
-        </div>
-
-        {/* Price Overview Chart */}
-        <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden mb-6">
-          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="w-5 h-5 text-purple-400" />
-              <h2 className="font-semibold">Price Overview</h2>
-              <span className="text-xs text-gray-500">yfinance data</span>
-            </div>
-          </div>
-          <div className="p-4">
-            <PriceChart symbol={symbol} priceData={stockData} />
-          </div>
+        {/* Stock Price Chart */}
+        <div className="mb-6">
+          <StockChart symbol={symbol} priceData={stockData} />
         </div>
         
         {/* Technical Indicators */}
