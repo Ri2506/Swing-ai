@@ -24,6 +24,31 @@ pk_logger.setLevel(logging.WARNING)
 # Import yfinance for data
 import yfinance as yf
 
+
+# =============================================================================
+# 🔧 UTILITY FUNCTIONS
+# =============================================================================
+
+def convert_numpy_types(obj):
+    """Convert numpy types to Python native types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, (np.bool_, np.bool8)):
+        return bool(obj)
+    elif isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj) if not np.isnan(obj) else None
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif pd.isna(obj):
+        return None
+    else:
+        return obj
+
+
 # Initialize PKScreener globals
 try:
     from pkscreener import globals as pk_globals
