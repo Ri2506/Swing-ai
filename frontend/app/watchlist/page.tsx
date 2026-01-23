@@ -32,7 +32,7 @@ interface WatchlistItem {
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [userId] = useState('demo-user-123') // Replace with real auth
+  const [userId] = useState('ffb9e2ca-6733-4e84-9286-0aa134e6f57e') // Test user - replace with real auth
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ notes: '', target_price: '', stop_loss: '' })
   const [chartSymbol, setChartSymbol] = useState<string | null>(null)
