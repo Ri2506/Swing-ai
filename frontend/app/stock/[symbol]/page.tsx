@@ -84,8 +84,9 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         }
         chartContainerRef.current.innerHTML = ''
         
-        // Create chart
+        // Create chart with autoSize
         const chart = LWC.createChart(chartContainerRef.current, {
+          autoSize: true,
           layout: {
             background: { type: LWC.ColorType.Solid, color: '#0f0f23' },
             textColor: '#9ca3af',
@@ -101,8 +102,6 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
             borderColor: '#374151',
             timeVisible: true,
           },
-          width: chartContainerRef.current.clientWidth,
-          height: 450,
         })
         
         chartRef.current = chart
