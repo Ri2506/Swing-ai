@@ -83,6 +83,14 @@ try:
 except Exception as e:
     print(f"⚠️ Auth endpoints not loaded: {e}")
 
+# 6. Watchlist Router (NEW!)
+try:
+    from watchlist import router as watchlist_router
+    app.include_router(watchlist_router, prefix="/api")
+    print("✅ Watchlist endpoints loaded")
+except Exception as e:
+    print(f"⚠️ Watchlist endpoints not loaded: {e}")
+
 # ============================================================
 # 📝 API DOCUMENTATION
 # ============================================================
