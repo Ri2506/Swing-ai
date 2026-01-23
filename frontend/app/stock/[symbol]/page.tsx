@@ -597,7 +597,7 @@ export default function StockDetailPage() {
             </a>
           </div>
           <div className="p-4">
-            <TradingViewWidget symbol={symbol} />
+            <TradingViewWidget symbol={symbol} priceData={stockData} />
           </div>
         </div>
         
