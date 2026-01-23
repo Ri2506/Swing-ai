@@ -75,8 +75,9 @@ function StockCard({ stock, index, onAddToWatchlist, onViewChart, isInWatchlist 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.02 }}
-      className="group relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-all hover:bg-gray-800/50"
+      className="group relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition-all hover:bg-gray-800/50 cursor-pointer"
       data-testid={`stock-card-${stock.symbol}`}
+      onClick={() => window.location.href = `/stock/${stock.symbol}`}
     >
       <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity ${
         isPositive ? 'bg-green-500/5' : 'bg-red-500/5'
