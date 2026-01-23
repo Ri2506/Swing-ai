@@ -91,6 +91,27 @@ try:
 except Exception as e:
     print(f"⚠️ Watchlist endpoints not loaded: {e}")
 
+# 7. WebSocket for Real-time Prices
+try:
+    import asyncio
+    from fastapi import WebSocket
+    from websocket_service import manager, websocket_endpoint, start_price_broadcast
+    
+    @app.websocket("/ws/prices/{client_id}")
+    async def ws_prices(websocket: WebSocket, client_id: str):
+        """WebSocket endpoint for real-time price updates"""
+        await websocket_endpoint(websocket, client_id)
+    
+    @app.on_event("startup")
+    async def startup_event():
+        """Start background price broadcasting"""
+        asyncio.create_task(start_price_broadcast(interval=5))
+        print("✅ WebSocket price broadcast started (5s interval)")
+    
+    print("✅ WebSocket endpoints loaded")
+except Exception as e:
+    print(f"⚠️ WebSocket endpoints not loaded: {e}")
+
 # ============================================================
 # 📝 API DOCUMENTATION
 # ============================================================
