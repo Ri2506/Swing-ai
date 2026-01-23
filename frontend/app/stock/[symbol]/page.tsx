@@ -14,6 +14,9 @@ import {
   ArrowUpRight, ArrowDownRight, Target,
   LineChart, Layers, Zap
 } from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
 
