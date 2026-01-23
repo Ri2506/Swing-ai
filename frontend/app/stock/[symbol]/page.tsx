@@ -76,15 +76,15 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       if (!chartContainerRef.current) return
       
       // Dynamically import lightweight-charts
-      const { createChart, ColorType } = await import('lightweight-charts')
+      const LightweightCharts = await import('lightweight-charts')
       
       // Clear previous chart
       chartContainerRef.current.innerHTML = ''
       
-      // Create chart
-      chart = createChart(chartContainerRef.current, {
+      // Create chart using v5 API
+      chart = LightweightCharts.createChart(chartContainerRef.current, {
         layout: {
-          background: { type: ColorType.Solid, color: '#0f0f23' },
+          background: { type: LightweightCharts.ColorType.Solid, color: '#0f0f23' },
           textColor: '#9ca3af',
         },
         grid: {
@@ -92,9 +92,9 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
           horzLines: { color: '#1f2937' },
         },
         crosshair: {
-          mode: 1,
-          vertLine: { color: '#6366f1', width: 1, style: 2 },
-          horzLine: { color: '#6366f1', width: 1, style: 2 },
+          mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: { color: '#6366f1', width: 1, style: LightweightCharts.LineStyle.Dashed },
+          horzLine: { color: '#6366f1', width: 1, style: LightweightCharts.LineStyle.Dashed },
         },
         rightPriceScale: {
           borderColor: '#374151',
@@ -111,8 +111,8 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       
       chartRef.current = chart
       
-      // Add candlestick series
-      const candleSeries = chart.addCandlestickSeries({
+      // Add candlestick series using v5 API
+      const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
         upColor: '#22c55e',
         downColor: '#ef4444',
         borderUpColor: '#22c55e',
@@ -122,13 +122,13 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       })
       candleSeriesRef.current = candleSeries
       
-      // Add volume series
-      const volumeSeries = chart.addHistogramSeries({
+      // Add volume series using v5 API
+      const volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
         color: '#6366f1',
         priceFormat: { type: 'volume' },
-        priceScaleId: '',
+        priceScaleId: 'volume',
       })
-      volumeSeries.priceScale().applyOptions({
+      chart.priceScale('volume').applyOptions({
         scaleMargins: { top: 0.85, bottom: 0 },
       })
       volumeSeriesRef.current = volumeSeries
@@ -179,7 +179,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
       if (data.success && data.history && candleSeriesRef.current) {
         // Format data for lightweight-charts
         const candleData = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000),
+          time: Math.floor(new Date(item.date).getTime() / 1000) as any,
           open: item.open,
           high: item.high,
           low: item.low,
@@ -187,7 +187,7 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
         }))
         
         const volumeData = data.history.map((item: any) => ({
-          time: Math.floor(new Date(item.date).getTime() / 1000),
+          time: Math.floor(new Date(item.date).getTime() / 1000) as any,
           value: item.volume,
           color: item.close >= item.open ? 'rgba(34, 197, 94, 0.5)' : 'rgba(239, 68, 68, 0.5)',
         }))
