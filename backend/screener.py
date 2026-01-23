@@ -204,7 +204,7 @@ def fetch_stocks_parallel(symbols: List[str], max_workers: int = 15) -> List[dic
                 data = future.result()
                 if data:
                     results.append(data)
-            except:
+            except Exception:
                 pass
     
     return results
