@@ -52,11 +52,10 @@ interface TechnicalData {
   volume_ratio: number
 }
 
-// TradingView Chart Widget - with NSE fallback
+// TradingView Chart Widget - with fallback guidance
 function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [exchange, setExchange] = useState('BSE') // Try BSE first, fallback to NSE
   
   useEffect(() => {
     if (!containerRef.current) return
@@ -83,14 +82,14 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     container.appendChild(copyright)
     containerRef.current.appendChild(container)
     
-    // Load TradingView widget script
+    // Load TradingView widget script - Use BSE for better compatibility
     const script = document.createElement('script')
     script.type = 'text/javascript'
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'
     script.async = true
     script.innerHTML = JSON.stringify({
       "autosize": true,
-      "symbol": `${exchange}:${symbol}`,
+      "symbol": `BSE:${symbol}`,
       "interval": "D",
       "timezone": "Asia/Kolkata",
       "theme": "dark",
@@ -108,29 +107,10 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
     return () => {
       if (containerRef.current) containerRef.current.innerHTML = ''
     }
-  }, [symbol, exchange])
+  }, [symbol])
   
   return (
     <div className="w-full" data-testid="tradingview-chart">
-      {/* Exchange toggle */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Exchange:</span>
-          <button
-            onClick={() => setExchange('BSE')}
-            className={`px-2 py-1 text-xs rounded ${exchange === 'BSE' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}
-          >
-            BSE
-          </button>
-          <button
-            onClick={() => setExchange('NSE')}
-            className={`px-2 py-1 text-xs rounded ${exchange === 'NSE' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}
-          >
-            NSE
-          </button>
-        </div>
-        <span className="text-xs text-gray-500">If chart shows invalid, try switching exchange</span>
-      </div>
       <div className="relative h-[500px] bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80 z-10">
@@ -138,6 +118,20 @@ function TradingViewAdvancedChart({ symbol }: { symbol: string }) {
           </div>
         )}
         <div ref={containerRef} className="w-full h-full" />
+      </div>
+      {/* Fallback notice */}
+      <div className="mt-2 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+        <p className="text-xs text-gray-400">
+          <span className="text-yellow-400">💡 Tip:</span> If chart shows "Invalid symbol", use the <span className="text-blue-400 font-medium">Price Overview</span> chart below (works for all stocks) or{' '}
+          <a 
+            href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:underline"
+          >
+            open full TradingView chart →
+          </a>
+        </p>
       </div>
     </div>
   )
