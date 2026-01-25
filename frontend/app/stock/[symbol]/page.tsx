@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3,
-  Bookmark, BookmarkCheck, RefreshCw, Clock, ExternalLink,
+  Bookmark, BookmarkCheck, RefreshCw, Clock,
   ArrowUpRight, ArrowDownRight, Target,
   LineChart, Layers, Zap
 } from 'lucide-react'
