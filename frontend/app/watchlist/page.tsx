@@ -12,9 +12,7 @@ import {
   RefreshCw, ArrowLeft, Search, Trash2, Eye, Edit2, X, Check,
   Plus, AlertCircle, Target, LineChart, BarChart3
 } from 'lucide-react'
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts'
+import AdvancedStockChart from '@/components/AdvancedStockChart'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
 
