@@ -1,5 +1,5 @@
 // ============================================================================
-// AI MARKET SCREENER V2 - ALL 61 SCANNERS + WATCHLIST + TRADINGVIEW
+// AI MARKET SCREENER V2 - ALL 61 SCANNERS + WATCHLIST + CUSTOM CHARTS
 // Full PKScreener integration with dynamic scanner fetching
 // ============================================================================
 
@@ -13,9 +13,12 @@ import {
   RefreshCw, Zap, Target, BarChart3, Activity, Clock, Star,
   ChevronRight, ChevronDown, X, Play, Bookmark, BookmarkCheck,
   ArrowLeft, Sparkles, Database, Globe2, Shield, LineChart,
-  Layers, Triangle, Cpu, ArrowRightLeft, Eye, ExternalLink,
+  Layers, Triangle, Cpu, ArrowRightLeft, Eye,
   Plus, Check, AlertCircle
 } from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
 
