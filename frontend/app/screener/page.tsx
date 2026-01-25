@@ -964,7 +964,7 @@ export default function ScreenerPage() {
                 Watchlist
               </Link>
               <Link href="/dashboard" className="hover:text-white flex items-center gap-1">
-                Dashboard <ExternalLink className="w-3 h-3" />
+                Dashboard <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
           </div>
