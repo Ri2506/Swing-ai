@@ -164,16 +164,14 @@ function StockChart({ symbol, priceData }: { symbol: string; priceData: StockDat
           )}
         </div>
         
-        {/* TradingView Link */}
-        <a
-          href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* Refresh Button */}
+        <button
+          onClick={() => fetchChartData()}
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition"
         >
-          <ExternalLink className="w-4 h-4" />
-          TradingView
-        </a>
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
       
       {/* Main Chart */}
