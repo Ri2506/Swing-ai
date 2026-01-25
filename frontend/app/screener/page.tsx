@@ -938,10 +938,10 @@ export default function ScreenerPage() {
         </div>
       </div>
       
-      {/* TradingView Chart Modal */}
+      {/* Stock Chart Modal */}
       <AnimatePresence>
         {chartSymbol && (
-          <TradingViewChart symbol={chartSymbol} onClose={() => setChartSymbol(null)} />
+          <StockChartModal symbol={chartSymbol} onClose={() => setChartSymbol(null)} />
         )}
       </AnimatePresence>
       
