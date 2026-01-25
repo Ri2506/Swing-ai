@@ -10,8 +10,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bookmark, BookmarkX, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight,
   RefreshCw, ArrowLeft, Search, Trash2, Eye, Edit2, X, Check,
-  Plus, AlertCircle, Target, LineChart, ExternalLink
+  Plus, AlertCircle, Target, LineChart, BarChart3
 } from 'lucide-react'
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from 'recharts'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
 
