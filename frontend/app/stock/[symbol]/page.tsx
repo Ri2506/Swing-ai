@@ -1,5 +1,5 @@
 // ============================================================================
-// STOCK DETAIL PAGE - Full Analysis with Custom Charts
+// STOCK DETAIL PAGE - Full Analysis with Advanced Real-time Charts
 // ============================================================================
 
 'use client'
@@ -14,9 +14,7 @@ import {
   ArrowUpRight, ArrowDownRight, Target,
   LineChart, Layers, Zap
 } from 'lucide-react'
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
-} from 'recharts'
+import AdvancedStockChart from '@/components/AdvancedStockChart'
 
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || ''
 
@@ -50,217 +48,6 @@ interface TechnicalData {
   sma_200?: number
   trend: string
   volume_ratio: number
-}
-
-// Beautiful Interactive Price Chart - Real NSE Data
-function StockChart({ symbol, priceData }: { symbol: string; priceData: StockData | null }) {
-  const [chartData, setChartData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [timeframe, setTimeframe] = useState('1M')
-  const [hoveredData, setHoveredData] = useState<any>(null)
-  
-  useEffect(() => {
-    fetchChartData()
-  }, [symbol, timeframe])
-  
-  const fetchChartData = async () => {
-    setIsLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${timeframe.toLowerCase()}`)
-      const data = await res.json()
-      
-      if (data.success && data.history) {
-        const formattedData = data.history.map((item: any) => ({
-          date: new Date(item.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-          fullDate: new Date(item.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: item.volume,
-          price: item.close,
-          change: item.close - item.open,
-          changePercent: ((item.close - item.open) / item.open * 100).toFixed(2)
-        }))
-        setChartData(formattedData)
-      }
-    } catch (error) {
-      console.error('Error fetching chart data:', error)
-    }
-    setIsLoading(false)
-  }
-  
-  const timeframes = [
-    { label: '1W', value: '1W', desc: '1 Week' },
-    { label: '1M', value: '1M', desc: '1 Month' },
-    { label: '3M', value: '3M', desc: '3 Months' },
-    { label: '1Y', value: '1Y', desc: '1 Year' },
-  ]
-  
-  const isPositive = chartData.length > 1 ? chartData[chartData.length - 1]?.close >= chartData[0]?.close : true
-  const priceChange = chartData.length > 1 ? (chartData[chartData.length - 1]?.close - chartData[0]?.close) : 0
-  const priceChangePercent = chartData.length > 1 ? ((priceChange / chartData[0]?.close) * 100).toFixed(2) : '0'
-  
-  const minPrice = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) * 0.995 : 0
-  const maxPrice = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) * 1.005 : 0
-  
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload
-      return (
-        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 shadow-2xl">
-          <p className="text-gray-400 text-xs mb-2">{data.fullDate}</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <span className="text-gray-500">Open</span>
-            <span className="text-white font-medium">₹{data.open?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">High</span>
-            <span className="text-green-400 font-medium">₹{data.high?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Low</span>
-            <span className="text-red-400 font-medium">₹{data.low?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Close</span>
-            <span className="text-white font-bold">₹{data.close?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Volume</span>
-            <span className="text-blue-400">{(data.volume / 1000000).toFixed(2)}M</span>
-          </div>
-          <div className={`mt-2 pt-2 border-t border-gray-700 text-center ${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {data.change >= 0 ? '▲' : '▼'} {data.changePercent}%
-          </div>
-        </div>
-      )
-    }
-    return null
-  }
-  
-  return (
-    <div className="w-full" data-testid="stock-chart">
-      {/* Chart Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          {/* Timeframe Buttons */}
-          <div className="flex items-center bg-gray-800/50 rounded-xl p-1">
-            {timeframes.map((tf) => (
-              <button
-                key={tf.value}
-                onClick={() => setTimeframe(tf.value)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                  timeframe === tf.value
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                }`}
-              >
-                {tf.label}
-              </button>
-            ))}
-          </div>
-          
-          {/* Period Change */}
-          {chartData.length > 0 && (
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isPositive ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-              <span className={`text-sm font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                {isPositive ? '▲' : '▼'} {priceChangePercent}%
-              </span>
-              <span className="text-xs text-gray-500">({timeframes.find(t => t.value === timeframe)?.desc})</span>
-            </div>
-          )}
-        </div>
-        
-        {/* Refresh Button */}
-        <button
-          onClick={() => fetchChartData()}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm transition"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
-      
-      {/* Main Chart */}
-      <div className="relative bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
-        {/* Chart Glow Effect */}
-        <div className={`absolute inset-0 opacity-20 ${isPositive ? 'bg-gradient-to-t from-green-500/20' : 'bg-gradient-to-t from-red-500/20'} to-transparent pointer-events-none`} />
-        
-        {isLoading ? (
-          <div className="h-[450px] flex items-center justify-center">
-            <div className="text-center">
-              <RefreshCw className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-3" />
-              <p className="text-gray-400">Loading chart data...</p>
-            </div>
-          </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-[450px] flex items-center justify-center">
-            <div className="text-center">
-              <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-400">No chart data available</p>
-              <button
-                onClick={() => fetchChartData()}
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
-              >
-                <RefreshCw className="w-4 h-4" /> Retry
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4">
-            <ResponsiveContainer width="100%" height={420}>
-              <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.4}/>
-                    <stop offset="50%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
-                    <stop offset="100%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
-                  </linearGradient>
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  interval="preserveStartEnd"
-                  dy={10}
-                />
-                <YAxis 
-                  domain={[minPrice, maxPrice]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 11 }}
-                  tickFormatter={(value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
-                  width={70}
-                  dx={-5}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke={isPositive ? "#22c55e" : "#ef4444"}
-                  strokeWidth={2.5}
-                  fill="url(#priceGradient)"
-                  filter="url(#glow)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-        
-        {/* Chart Footer */}
-        <div className="px-4 pb-4 flex items-center justify-between text-xs text-gray-500 border-t border-gray-800/50 pt-3">
-          <span>Real-time NSE data • Powered by yfinance</span>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <span className={`w-2 h-2 rounded-full ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-              {isPositive ? 'Bullish' : 'Bearish'} trend
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // Technical Indicator Card
@@ -348,28 +135,36 @@ export default function StockDetailPage() {
       }
       
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data)
-        if (data.type === 'price_update' && data.prices?.[symbol]) {
-          const price = data.prices[symbol]
-          setStockData(prev => prev ? {
-            ...prev,
-            price: price.price,
-            change: price.change,
-            change_percent: price.change_percent,
-            high: price.high,
-            low: price.low,
-            volume: price.volume
-          } : null)
-          setLastUpdate(new Date())
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'price_update' && data.prices?.[symbol]) {
+            const priceUpdate = data.prices[symbol]
+            setStockData(prev => prev ? {
+              ...prev,
+              price: priceUpdate.price,
+              change: priceUpdate.change,
+              change_percent: priceUpdate.change_percent
+            } : null)
+            setLastUpdate(new Date())
+          }
+        } catch (e) {
+          // Ignore parse errors
         }
       }
       
-      ws.onerror = () => setWsConnected(false)
-      ws.onclose = () => setWsConnected(false)
+      ws.onclose = () => {
+        setWsConnected(false)
+        // Attempt to reconnect after 5 seconds
+        setTimeout(connectWebSocket, 5000)
+      }
+      
+      ws.onerror = () => {
+        setWsConnected(false)
+      }
       
       wsRef.current = ws
     } catch (error) {
-      console.error('WebSocket error:', error)
+      console.error('WebSocket connection error:', error)
     }
   }
 
@@ -380,62 +175,56 @@ export default function StockDetailPage() {
       const priceData = await priceRes.json()
       
       if (priceData.success) {
-        setStockData(prev => ({
-          ...prev,
-          symbol: symbol,
-          name: symbol, // Will be updated
+        setStockData({
+          symbol,
+          name: priceData.name || symbol,
           price: priceData.price,
           change: priceData.change,
           change_percent: priceData.change_percent,
           open: priceData.open,
           high: priceData.high,
           low: priceData.low,
-          volume: priceData.volume
-        } as StockData))
+          volume: priceData.volume,
+          prev_close: priceData.prev_close,
+          week_52_high: priceData.week_52_high,
+          week_52_low: priceData.week_52_low,
+          market_cap: priceData.market_cap,
+          pe_ratio: priceData.pe_ratio,
+          sector: priceData.sector,
+          industry: priceData.industry
+        })
         setLastUpdate(new Date())
       }
       
-      // Fetch technical analysis
-      const techRes = await fetch(`${API_BASE}/api/screener/pk/scan/single?symbol=${symbol}&scanner_id=trend`, {
-        method: 'POST'
-      })
+      // Fetch technicals
+      const techRes = await fetch(`${API_BASE}/api/screener/technicals/${symbol}`)
       const techData = await techRes.json()
       
-      if (techData.success && techData.result) {
-        const r = techData.result
+      if (techData.success) {
         setTechnicals({
-          rsi: r.rsi || 50,
-          macd: r.macd || 0,
-          macd_signal: r.macd_signal || 0,
-          sma_20: r.sma_20 || 0,
-          sma_50: r.sma_50 || 0,
-          trend: r.trend || 'Neutral',
-          volume_ratio: r.volume_ratio || 1
+          rsi: techData.rsi,
+          macd: techData.macd,
+          macd_signal: techData.macd_signal,
+          sma_20: techData.sma_20,
+          sma_50: techData.sma_50,
+          sma_200: techData.sma_200,
+          trend: techData.trend,
+          volume_ratio: techData.volume_ratio
         })
-        
-        // Update stock data with more info
-        setStockData(prev => prev ? {
-          ...prev,
-          name: r.name || symbol,
-          sector: r.sector,
-          week_52_high: r.high_52w,
-          week_52_low: r.low_52w,
-          market_cap: r.market_cap
-        } : null)
       }
-      
-      setLoading(false)
     } catch (error) {
       console.error('Error fetching stock data:', error)
-      setLoading(false)
     }
+    setLoading(false)
   }
 
   const checkWatchlist = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/watchlist/${userId}/check/${symbol}`)
+      const res = await fetch(`${API_BASE}/api/watchlist/${userId}`)
       const data = await res.json()
-      setIsInWatchlist(data.in_watchlist || false)
+      if (data.success && data.watchlist) {
+        setIsInWatchlist(data.watchlist.some((item: any) => item.symbol === symbol))
+      }
     } catch (error) {
       console.error('Error checking watchlist:', error)
     }
@@ -447,10 +236,10 @@ export default function StockDetailPage() {
         await fetch(`${API_BASE}/api/watchlist/${userId}/${symbol}`, { method: 'DELETE' })
         setIsInWatchlist(false)
       } else {
-        await fetch(`${API_BASE}/api/watchlist/add`, {
+        await fetch(`${API_BASE}/api/watchlist/${userId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, symbol })
+          body: JSON.stringify({ symbol, notes: '' })
         })
         setIsInWatchlist(true)
       }
@@ -459,12 +248,18 @@ export default function StockDetailPage() {
     }
   }
 
-  const isPositive = (stockData?.change_percent || 0) >= 0
+  const isPositive = (stockData?.change || 0) >= 0
 
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <RefreshCw className="w-8 h-8 text-green-500 animate-spin" />
+        <div className="text-center">
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-gray-400 mt-4">Loading {symbol}...</p>
+        </div>
       </div>
     )
   }
@@ -521,76 +316,43 @@ export default function StockDetailPage() {
       </header>
       
       <div className="container mx-auto px-4 py-6">
-        {/* Price Section */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="text-4xl font-bold text-white mb-2">
-                  ₹{stockData?.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                </div>
-                <div className={`flex items-center gap-2 text-lg ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                  {isPositive ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />}
-                  <span>{isPositive ? '+' : ''}{stockData?.change?.toFixed(2)}</span>
-                  <span>({isPositive ? '+' : ''}{stockData?.change_percent?.toFixed(2)}%)</span>
-                </div>
-              </div>
-              {lastUpdate && (
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {lastUpdate.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <div className="text-gray-500 text-sm">Open</div>
-                <div className="font-medium">₹{stockData?.open?.toLocaleString('en-IN')}</div>
-              </div>
-              <div>
-                <div className="text-gray-500 text-sm">High</div>
-                <div className="font-medium text-green-400">₹{stockData?.high?.toLocaleString('en-IN')}</div>
-              </div>
-              <div>
-                <div className="text-gray-500 text-sm">Low</div>
-                <div className="font-medium text-red-400">₹{stockData?.low?.toLocaleString('en-IN')}</div>
-              </div>
-              <div>
-                <div className="text-gray-500 text-sm">Volume</div>
-                <div className="font-medium">{(stockData?.volume || 0).toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Quick Stats */}
-          <div className="space-y-4">
-            <IndicatorCard 
-              label="Trend" 
-              value={technicals?.trend || 'N/A'} 
-              trend={technicals?.trend?.includes('Up') ? 'up' : technicals?.trend?.includes('Down') ? 'down' : 'neutral'}
-              icon={TrendingUp}
-            />
-            <IndicatorCard 
-              label="RSI (14)" 
-              value={technicals?.rsi?.toFixed(1) || 'N/A'} 
-              subValue={technicals?.rsi && technicals.rsi < 30 ? 'Oversold' : technicals?.rsi && technicals.rsi > 70 ? 'Overbought' : 'Neutral'}
-              trend={technicals?.rsi && technicals.rsi < 30 ? 'up' : technicals?.rsi && technicals.rsi > 70 ? 'down' : 'neutral'}
-              icon={Activity}
-            />
-            <IndicatorCard 
-              label="Volume" 
-              value={`${technicals?.volume_ratio?.toFixed(1) || 1}x`} 
-              subValue="vs 20-day avg"
-              trend={technicals?.volume_ratio && technicals.volume_ratio > 1.5 ? 'up' : 'neutral'}
-              icon={BarChart3}
-            />
-          </div>
+        {/* Quick Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <IndicatorCard 
+            label="Trend" 
+            value={technicals?.trend || 'N/A'} 
+            trend={technicals?.trend?.includes('Up') ? 'up' : technicals?.trend?.includes('Down') ? 'down' : 'neutral'}
+            icon={TrendingUp}
+          />
+          <IndicatorCard 
+            label="RSI (14)" 
+            value={technicals?.rsi?.toFixed(1) || 'N/A'} 
+            subValue={technicals?.rsi && technicals.rsi < 30 ? 'Oversold' : technicals?.rsi && technicals.rsi > 70 ? 'Overbought' : 'Neutral'}
+            trend={technicals?.rsi && technicals.rsi < 30 ? 'up' : technicals?.rsi && technicals.rsi > 70 ? 'down' : 'neutral'}
+            icon={Activity}
+          />
+          <IndicatorCard 
+            label="Volume" 
+            value={`${technicals?.volume_ratio?.toFixed(1) || 1}x`} 
+            subValue="vs 20-day avg"
+            trend={technicals?.volume_ratio && technicals.volume_ratio > 1.5 ? 'up' : 'neutral'}
+            icon={BarChart3}
+          />
+          <IndicatorCard 
+            label="Day Range" 
+            value={`₹${stockData?.low?.toFixed(0)} - ₹${stockData?.high?.toFixed(0)}`} 
+            subValue={`Open: ₹${stockData?.open?.toFixed(2)}`}
+            icon={Target}
+          />
         </div>
         
-        {/* Stock Price Chart */}
+        {/* Advanced Stock Chart */}
         <div className="mb-6">
-          <StockChart symbol={symbol} priceData={stockData} />
+          <AdvancedStockChart 
+            symbol={symbol} 
+            showHeader={true}
+            height="450px"
+          />
         </div>
         
         {/* Technical Indicators */}
@@ -622,18 +384,22 @@ export default function StockDetailPage() {
                 <span className="text-gray-400">SMA 50</span>
                 <span className="font-medium">₹{technicals?.sma_50?.toLocaleString('en-IN') || 'N/A'}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">SMA 200</span>
+                <span className="font-medium">₹{technicals?.sma_200?.toLocaleString('en-IN') || 'N/A'}</span>
+              </div>
             </div>
           </div>
           
-          {/* MACD */}
+          {/* MACD & Momentum */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-cyan-400" />
-              MACD Analysis
+              <Activity className="w-4 h-4 text-blue-400" />
+              Momentum Indicators
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">MACD Line</span>
+                <span className="text-gray-400">MACD</span>
                 <span className={`font-medium ${(technicals?.macd || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {technicals?.macd?.toFixed(2) || 'N/A'}
                 </span>
@@ -643,37 +409,70 @@ export default function StockDetailPage() {
                 <span className="font-medium">{technicals?.macd_signal?.toFixed(2) || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-400">Histogram</span>
-                <span className={`font-medium ${((technicals?.macd || 0) - (technicals?.macd_signal || 0)) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {((technicals?.macd || 0) - (technicals?.macd_signal || 0)).toFixed(2)}
+                <span className="text-gray-400">RSI (14)</span>
+                <span className={`font-medium ${
+                  technicals?.rsi && technicals.rsi < 30 ? 'text-green-400' : 
+                  technicals?.rsi && technicals.rsi > 70 ? 'text-red-400' : 'text-white'
+                }`}>
+                  {technicals?.rsi?.toFixed(2) || 'N/A'}
                 </span>
               </div>
-              <div className="pt-2 border-t border-gray-800">
-                <span className={`text-sm ${(technicals?.macd || 0) > (technicals?.macd_signal || 0) ? 'text-green-400' : 'text-red-400'}`}>
-                  {(technicals?.macd || 0) > (technicals?.macd_signal || 0) ? '↑ Bullish Crossover' : '↓ Bearish Crossover'}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Trend</span>
+                <span className={`font-medium ${
+                  technicals?.trend?.includes('Up') ? 'text-green-400' : 
+                  technicals?.trend?.includes('Down') ? 'text-red-400' : 'text-white'
+                }`}>
+                  {technicals?.trend || 'N/A'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">Volume Ratio</span>
+                <span className={`font-medium ${(technicals?.volume_ratio || 1) > 1.5 ? 'text-yellow-400' : 'text-white'}`}>
+                  {technicals?.volume_ratio?.toFixed(2) || '1.00'}x
                 </span>
               </div>
             </div>
           </div>
         </div>
         
-        {/* Quick Actions */}
-        <div className="flex items-center justify-center gap-4">
-          <Link 
-            href={`/paper-trading?symbol=${symbol}`}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl font-medium hover:opacity-90"
-          >
-            <Zap className="w-4 h-4" />
-            Paper Trade
-          </Link>
-          <Link 
-            href="/screener"
-            className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Screener
-          </Link>
-        </div>
+        {/* Additional Info */}
+        {(stockData?.sector || stockData?.market_cap) && (
+          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              Company Info
+            </h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {stockData?.sector && (
+                <div>
+                  <div className="text-gray-500 text-sm">Sector</div>
+                  <div className="font-medium">{stockData.sector}</div>
+                </div>
+              )}
+              {stockData?.industry && (
+                <div>
+                  <div className="text-gray-500 text-sm">Industry</div>
+                  <div className="font-medium">{stockData.industry}</div>
+                </div>
+              )}
+              {stockData?.market_cap && (
+                <div>
+                  <div className="text-gray-500 text-sm">Market Cap</div>
+                  <div className="font-medium">
+                    ₹{(stockData.market_cap / 10000000).toFixed(2)} Cr
+                  </div>
+                </div>
+              )}
+              {stockData?.pe_ratio && (
+                <div>
+                  <div className="text-gray-500 text-sm">P/E Ratio</div>
+                  <div className="font-medium">{stockData.pe_ratio.toFixed(2)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
