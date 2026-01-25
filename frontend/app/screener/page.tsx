@@ -153,83 +153,19 @@ function StockCard({ stock, index, onAddToWatchlist, onViewChart, isInWatchlist 
   )
 }
 
+import AdvancedStockChart from '@/components/AdvancedStockChart'
+
 function StockChartModal({ symbol, onClose }: { symbol: string; onClose: () => void }) {
-  const [chartData, setChartData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [timeframe, setTimeframe] = useState('1M')
-  const [stockInfo, setStockInfo] = useState<any>(null)
-  
-  useEffect(() => {
-    fetchChartData()
-  }, [symbol, timeframe])
-  
-  const fetchChartData = async () => {
-    setIsLoading(true)
-    try {
-      // Fetch historical data
-      const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${timeframe.toLowerCase()}`)
-      const data = await res.json()
-      
-      if (data.success && data.history) {
-        const formattedData = data.history.map((item: any) => ({
-          date: new Date(item.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-          fullDate: new Date(item.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: item.volume,
-          price: item.close
-        }))
-        setChartData(formattedData)
-      }
-      
-      // Fetch current price
-      const priceRes = await fetch(`${API_BASE}/api/screener/prices/${symbol}`)
-      const priceData = await priceRes.json()
-      if (priceData.success) {
-        setStockInfo(priceData)
-      }
-    } catch (error) {
-      console.error('Error fetching chart data:', error)
-    }
-    setIsLoading(false)
-  }
-  
-  const timeframes = [
-    { label: '1W', value: '1W' },
-    { label: '1M', value: '1M' },
-    { label: '3M', value: '3M' },
-    { label: '1Y', value: '1Y' },
-  ]
-  
-  const isPositive = chartData.length > 1 ? chartData[chartData.length - 1]?.close >= chartData[0]?.close : true
-  const minPrice = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) * 0.995 : 0
-  const maxPrice = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) * 1.005 : 0
-  
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload
-      return (
-        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 shadow-2xl">
-          <p className="text-gray-400 text-xs mb-2">{data.fullDate}</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <span className="text-gray-500">Open</span>
-            <span className="text-white font-medium">₹{data.open?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">High</span>
-            <span className="text-green-400 font-medium">₹{data.high?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Low</span>
-            <span className="text-red-400 font-medium">₹{data.low?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Close</span>
-            <span className="text-white font-bold">₹{data.close?.toLocaleString('en-IN')}</span>
-            <span className="text-gray-500">Volume</span>
-            <span className="text-blue-400">{(data.volume / 1000000).toFixed(2)}M</span>
-          </div>
-        </div>
-      )
-    }
-    return null
-  }
+  return (
+    <AdvancedStockChart 
+      symbol={symbol} 
+      isModal={true}
+      onClose={onClose}
+      showHeader={true}
+      height="500px"
+    />
+  )
+}
   
   return (
     <motion.div
