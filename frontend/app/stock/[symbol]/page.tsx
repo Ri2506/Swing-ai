@@ -1,5 +1,5 @@
 // ============================================================================
-// STOCK DETAIL PAGE - Full Analysis with TradingView
+// STOCK DETAIL PAGE - Full Analysis with Custom Charts
 // ============================================================================
 
 'use client'
