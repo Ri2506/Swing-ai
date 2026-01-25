@@ -191,14 +191,12 @@ function StockChart({ symbol, priceData }: { symbol: string; priceData: StockDat
             <div className="text-center">
               <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
               <p className="text-gray-400">No chart data available</p>
-              <a
-                href={`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+              <button
+                onClick={() => fetchChartData()}
+                className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
               >
-                View on TradingView <ExternalLink className="w-4 h-4" />
-              </a>
+                <RefreshCw className="w-4 h-4" /> Retry
+              </button>
             </div>
           </div>
         ) : (
