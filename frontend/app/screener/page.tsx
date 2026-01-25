@@ -150,8 +150,83 @@ function StockCard({ stock, index, onAddToWatchlist, onViewChart, isInWatchlist 
   )
 }
 
-function TradingViewChart({ symbol, onClose }: { symbol: string; onClose: () => void }) {
-  const tvSymbol = `NSE:${symbol}`
+function StockChartModal({ symbol, onClose }: { symbol: string; onClose: () => void }) {
+  const [chartData, setChartData] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [timeframe, setTimeframe] = useState('1M')
+  const [stockInfo, setStockInfo] = useState<any>(null)
+  
+  useEffect(() => {
+    fetchChartData()
+  }, [symbol, timeframe])
+  
+  const fetchChartData = async () => {
+    setIsLoading(true)
+    try {
+      // Fetch historical data
+      const res = await fetch(`${API_BASE}/api/screener/prices/${symbol}/history?period=${timeframe.toLowerCase()}`)
+      const data = await res.json()
+      
+      if (data.success && data.history) {
+        const formattedData = data.history.map((item: any) => ({
+          date: new Date(item.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+          fullDate: new Date(item.date).toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+          volume: item.volume,
+          price: item.close
+        }))
+        setChartData(formattedData)
+      }
+      
+      // Fetch current price
+      const priceRes = await fetch(`${API_BASE}/api/screener/prices/${symbol}`)
+      const priceData = await priceRes.json()
+      if (priceData.success) {
+        setStockInfo(priceData)
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error)
+    }
+    setIsLoading(false)
+  }
+  
+  const timeframes = [
+    { label: '1W', value: '1W' },
+    { label: '1M', value: '1M' },
+    { label: '3M', value: '3M' },
+    { label: '1Y', value: '1Y' },
+  ]
+  
+  const isPositive = chartData.length > 1 ? chartData[chartData.length - 1]?.close >= chartData[0]?.close : true
+  const minPrice = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) * 0.995 : 0
+  const maxPrice = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) * 1.005 : 0
+  
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-xl p-4 shadow-2xl">
+          <p className="text-gray-400 text-xs mb-2">{data.fullDate}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <span className="text-gray-500">Open</span>
+            <span className="text-white font-medium">₹{data.open?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">High</span>
+            <span className="text-green-400 font-medium">₹{data.high?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Low</span>
+            <span className="text-red-400 font-medium">₹{data.low?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Close</span>
+            <span className="text-white font-bold">₹{data.close?.toLocaleString('en-IN')}</span>
+            <span className="text-gray-500">Volume</span>
+            <span className="text-blue-400">{(data.volume / 1000000).toFixed(2)}M</span>
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
   
   return (
     <motion.div
@@ -170,26 +245,121 @@ function TradingViewChart({ symbol, onClose }: { symbol: string; onClose: () => 
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <div className="flex items-center gap-3">
-            <LineChart className="w-5 h-5 text-blue-400" />
-            <h2 className="text-xl font-bold text-white">{symbol}</h2>
-            <span className="text-sm text-gray-500">NSE</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <LineChart className="w-5 h-5 text-blue-400" />
+              <h2 className="text-xl font-bold text-white">{symbol}</h2>
+              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">NSE</span>
+            </div>
+            {stockInfo && (
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-bold text-white">₹{stockInfo.price?.toLocaleString('en-IN')}</span>
+                <span className={`text-sm font-medium ${stockInfo.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {stockInfo.change >= 0 ? '+' : ''}{stockInfo.change?.toFixed(2)} ({stockInfo.change_percent?.toFixed(2)}%)
+                </span>
+              </div>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-800 rounded-lg transition"
-          >
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Timeframe Buttons */}
+            <div className="flex items-center bg-gray-800/50 rounded-lg p-1">
+              {timeframes.map((tf) => (
+                <button
+                  key={tf.value}
+                  onClick={() => setTimeframe(tf.value)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                    timeframe === tf.value
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  }`}
+                >
+                  {tf.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-800 rounded-lg transition"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
         </div>
         
-        {/* TradingView Widget */}
-        <div className="h-[calc(100%-64px)]">
-          <iframe
-            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tvSymbol}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Asia%2FKolkata&studies_overrides={}&overrides={}&enabled_features=[]&disabled_features=[]&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${tvSymbol}`}
-            className="w-full h-full border-0"
-            allowFullScreen
-          />
+        {/* Chart Area */}
+        <div className="h-[calc(100%-80px)] p-4">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <RefreshCw className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-3" />
+                <p className="text-gray-400">Loading chart data...</p>
+              </div>
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">No chart data available</p>
+                <button
+                  onClick={() => fetchChartData()}
+                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+                >
+                  <RefreshCw className="w-4 h-4" /> Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full bg-gradient-to-b from-gray-900 to-gray-950 rounded-xl overflow-hidden border border-gray-800">
+              <div className={`absolute inset-0 opacity-10 ${isPositive ? 'bg-gradient-to-t from-green-500/20' : 'bg-gradient-to-t from-red-500/20'} to-transparent pointer-events-none`} />
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 20, right: 20, left: 10, bottom: 20 }}>
+                  <defs>
+                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.4}/>
+                      <stop offset="50%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
+                      <stop offset="100%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                    interval="preserveStartEnd"
+                    dy={10}
+                  />
+                  <YAxis 
+                    domain={[minPrice, maxPrice]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6b7280', fontSize: 11 }}
+                    tickFormatter={(value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                    width={70}
+                    dx={-5}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="price" 
+                    stroke={isPositive ? "#22c55e" : "#ef4444"}
+                    strokeWidth={2.5}
+                    fill="url(#chartGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+        
+        {/* Footer */}
+        <div className="px-4 pb-4 flex items-center justify-between text-xs text-gray-500 border-t border-gray-800/50 pt-3">
+          <span>Real-time NSE data • Powered by yfinance</span>
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-full ${isPositive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+              {isPositive ? 'Bullish' : 'Bearish'} trend
+            </span>
+          </div>
         </div>
       </motion.div>
     </motion.div>
