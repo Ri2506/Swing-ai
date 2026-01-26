@@ -50,13 +50,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${sora.variable} ${newsreader.variable} ${jetbrainsMono.variable} bg-background-primary text-text-primary antialiased`}
+        className={`${sora.variable} ${newsreader.variable} ${jetbrainsMono.variable} bg-space-void text-text-primary antialiased bg-deep-space`}
       >
-        <AuroraBackground className="min-h-screen h-auto w-full items-start justify-start bg-background-primary text-text-primary">
-          <Providers>{children}</Providers>
-        </AuroraBackground>
+        <div className="bg-nebula bg-grain min-h-screen">
+          <AuroraBackground className="min-h-screen h-auto w-full items-start justify-start">
+            <Providers>{children}</Providers>
+          </AuroraBackground>
+        </div>
       </body>
     </html>
   )
