@@ -281,6 +281,454 @@ body {
 }
 
 /* ============================================================
+   GLASSMORPHISM + NEUMORPHISM HYBRID
+   Combines glass transparency with soft 3D "pillow" effect
+   Creates tactile, clay-like depth with frosted glass
+   ============================================================ */
+
+/* Base Neumorphic Glass Card - The core hybrid style */
+.glass-neu {
+  background: linear-gradient(
+    145deg,
+    rgba(16, 22, 38, 0.8) 0%,
+    rgba(10, 15, 28, 0.6) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: none;
+  box-shadow: 
+    /* Outer dark shadow - creates depth */
+    8px 8px 24px rgba(0, 0, 0, 0.5),
+    /* Outer light shadow - creates lift */
+    -4px -4px 16px rgba(255, 255, 255, 0.02),
+    /* Inner top-left highlight - glass reflection */
+    inset 2px 2px 4px rgba(255, 255, 255, 0.05),
+    /* Inner bottom-right shadow - depth */
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-neu:hover {
+  box-shadow: 
+    10px 10px 30px rgba(0, 0, 0, 0.6),
+    -6px -6px 20px rgba(255, 255, 255, 0.03),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.07),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Neumorphic Glass Card - Elevated variant */
+.glass-neu-elevated {
+  background: linear-gradient(
+    145deg,
+    rgba(18, 26, 44, 0.85) 0%,
+    rgba(12, 18, 32, 0.7) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 
+    12px 12px 32px rgba(0, 0, 0, 0.55),
+    -6px -6px 20px rgba(255, 255, 255, 0.025),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-neu-elevated:hover {
+  box-shadow: 
+    16px 16px 40px rgba(0, 0, 0, 0.6),
+    -8px -8px 24px rgba(255, 255, 255, 0.03),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.08),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.1),
+    0 0 60px -15px rgba(0, 229, 255, 0.15);
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* Neumorphic Glass - Inset/Pressed variant */
+.glass-neu-inset {
+  background: linear-gradient(
+    145deg,
+    rgba(8, 12, 22, 0.9) 0%,
+    rgba(12, 18, 32, 0.7) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: none;
+  box-shadow: 
+    inset 6px 6px 16px rgba(0, 0, 0, 0.5),
+    inset -4px -4px 12px rgba(255, 255, 255, 0.02),
+    0 1px 2px rgba(255, 255, 255, 0.03);
+}
+
+/* Neumorphic Glass Button */
+.btn-glass-neu {
+  background: linear-gradient(
+    145deg,
+    rgba(20, 28, 48, 0.9) 0%,
+    rgba(14, 20, 36, 0.8) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  border: none;
+  padding: 12px 24px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  box-shadow: 
+    6px 6px 16px rgba(0, 0, 0, 0.45),
+    -3px -3px 10px rgba(255, 255, 255, 0.02),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-glass-neu:hover {
+  box-shadow: 
+    8px 8px 20px rgba(0, 0, 0, 0.5),
+    -4px -4px 12px rgba(255, 255, 255, 0.03),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.07),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.btn-glass-neu:active {
+  box-shadow: 
+    inset 4px 4px 12px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 8px rgba(255, 255, 255, 0.02);
+  transform: translateY(1px);
+}
+
+/* Neumorphic Glass Button - Primary (with glow) */
+.btn-glass-neu-primary {
+  background: linear-gradient(
+    145deg,
+    rgba(0, 255, 136, 0.2) 0%,
+    rgba(0, 200, 100, 0.15) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  padding: 12px 24px;
+  color: #00ff88;
+  font-weight: 600;
+  box-shadow: 
+    6px 6px 16px rgba(0, 0, 0, 0.4),
+    -3px -3px 10px rgba(0, 255, 136, 0.03),
+    inset 1px 1px 2px rgba(0, 255, 136, 0.1),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+    0 0 20px -5px rgba(0, 255, 136, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-glass-neu-primary:hover {
+  box-shadow: 
+    8px 8px 20px rgba(0, 0, 0, 0.45),
+    -4px -4px 12px rgba(0, 255, 136, 0.05),
+    inset 1px 1px 2px rgba(0, 255, 136, 0.15),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15),
+    0 0 30px -5px rgba(0, 255, 136, 0.4);
+  transform: translateY(-2px);
+  border-color: rgba(0, 255, 136, 0.3);
+}
+
+.btn-glass-neu-primary:active {
+  box-shadow: 
+    inset 4px 4px 12px rgba(0, 0, 0, 0.35),
+    inset -2px -2px 8px rgba(0, 255, 136, 0.05),
+    0 0 15px -5px rgba(0, 255, 136, 0.25);
+  transform: translateY(0);
+}
+
+/* Neumorphic Glass Button - Accent (cyan) */
+.btn-glass-neu-accent {
+  background: linear-gradient(
+    145deg,
+    rgba(0, 229, 255, 0.15) 0%,
+    rgba(0, 180, 220, 0.1) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  padding: 12px 24px;
+  color: #00e5ff;
+  font-weight: 600;
+  box-shadow: 
+    6px 6px 16px rgba(0, 0, 0, 0.4),
+    -3px -3px 10px rgba(0, 229, 255, 0.02),
+    inset 1px 1px 2px rgba(0, 229, 255, 0.08),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2),
+    0 0 20px -5px rgba(0, 229, 255, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-glass-neu-accent:hover {
+  box-shadow: 
+    8px 8px 20px rgba(0, 0, 0, 0.45),
+    -4px -4px 12px rgba(0, 229, 255, 0.04),
+    inset 1px 1px 2px rgba(0, 229, 255, 0.12),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15),
+    0 0 30px -5px rgba(0, 229, 255, 0.35);
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 255, 0.25);
+}
+
+/* Neumorphic Glass Input Field */
+.input-glass-neu {
+  background: linear-gradient(
+    145deg,
+    rgba(8, 12, 24, 0.9) 0%,
+    rgba(12, 18, 32, 0.8) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 14px 18px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  box-shadow: 
+    inset 4px 4px 12px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 8px rgba(255, 255, 255, 0.015),
+    0 1px 2px rgba(255, 255, 255, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-glass-neu:focus {
+  outline: none;
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow: 
+    inset 4px 4px 12px rgba(0, 0, 0, 0.35),
+    inset -2px -2px 8px rgba(255, 255, 255, 0.02),
+    0 0 20px -5px rgba(0, 229, 255, 0.2);
+}
+
+.input-glass-neu::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Neumorphic Glass Toggle/Switch */
+.toggle-glass-neu {
+  width: 56px;
+  height: 30px;
+  background: linear-gradient(
+    145deg,
+    rgba(8, 12, 24, 0.95) 0%,
+    rgba(14, 20, 36, 0.85) 100%
+  );
+  border-radius: 15px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 
+    inset 4px 4px 10px rgba(0, 0, 0, 0.5),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-glass-neu::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(
+    145deg,
+    rgba(60, 70, 90, 1) 0%,
+    rgba(40, 50, 70, 1) 100%
+  );
+  box-shadow: 
+    3px 3px 8px rgba(0, 0, 0, 0.4),
+    -2px -2px 6px rgba(255, 255, 255, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-glass-neu.active {
+  background: linear-gradient(
+    145deg,
+    rgba(0, 200, 100, 0.3) 0%,
+    rgba(0, 150, 80, 0.2) 100%
+  );
+  box-shadow: 
+    inset 4px 4px 10px rgba(0, 0, 0, 0.3),
+    inset -2px -2px 6px rgba(0, 255, 136, 0.05),
+    0 0 15px -5px rgba(0, 255, 136, 0.3);
+}
+
+.toggle-glass-neu.active::after {
+  left: 29px;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 255, 136, 1) 0%,
+    rgba(0, 200, 100, 1) 100%
+  );
+  box-shadow: 
+    3px 3px 8px rgba(0, 0, 0, 0.3),
+    -2px -2px 6px rgba(0, 255, 136, 0.1),
+    0 0 10px rgba(0, 255, 136, 0.4);
+}
+
+/* Neumorphic Glass Badge/Chip */
+.badge-glass-neu {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(
+    145deg,
+    rgba(16, 22, 38, 0.8) 0%,
+    rgba(10, 15, 28, 0.6) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.4),
+    -2px -2px 8px rgba(255, 255, 255, 0.015),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.04);
+}
+
+.badge-glass-neu-success {
+  background: linear-gradient(
+    145deg,
+    rgba(0, 255, 136, 0.15) 0%,
+    rgba(0, 200, 100, 0.1) 100%
+  );
+  color: #00ff88;
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.35),
+    -2px -2px 8px rgba(0, 255, 136, 0.02),
+    inset 1px 1px 2px rgba(0, 255, 136, 0.08),
+    0 0 12px -4px rgba(0, 255, 136, 0.25);
+}
+
+.badge-glass-neu-danger {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 71, 87, 0.15) 0%,
+    rgba(200, 50, 60, 0.1) 100%
+  );
+  color: #ff4757;
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.35),
+    -2px -2px 8px rgba(255, 71, 87, 0.02),
+    inset 1px 1px 2px rgba(255, 71, 87, 0.08),
+    0 0 12px -4px rgba(255, 71, 87, 0.25);
+}
+
+.badge-glass-neu-accent {
+  background: linear-gradient(
+    145deg,
+    rgba(0, 229, 255, 0.12) 0%,
+    rgba(0, 180, 220, 0.08) 100%
+  );
+  color: #00e5ff;
+  box-shadow: 
+    4px 4px 12px rgba(0, 0, 0, 0.35),
+    -2px -2px 8px rgba(0, 229, 255, 0.02),
+    inset 1px 1px 2px rgba(0, 229, 255, 0.06),
+    0 0 12px -4px rgba(0, 229, 255, 0.2);
+}
+
+/* Neumorphic Glass Stat Card */
+.stat-glass-neu {
+  background: linear-gradient(
+    145deg,
+    rgba(16, 24, 42, 0.85) 0%,
+    rgba(10, 16, 30, 0.7) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 
+    10px 10px 28px rgba(0, 0, 0, 0.5),
+    -5px -5px 16px rgba(255, 255, 255, 0.02),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.04),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-glass-neu:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    14px 14px 36px rgba(0, 0, 0, 0.55),
+    -7px -7px 20px rgba(255, 255, 255, 0.025),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Neumorphic Glass Navigation */
+.nav-glass-neu {
+  background: linear-gradient(
+    180deg,
+    rgba(12, 18, 32, 0.9) 0%,
+    rgba(8, 12, 24, 0.85) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Neumorphic Icon Button */
+.icon-btn-glass-neu {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    145deg,
+    rgba(18, 26, 44, 0.9) 0%,
+    rgba(12, 18, 32, 0.8) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    5px 5px 14px rgba(0, 0, 0, 0.45),
+    -3px -3px 10px rgba(255, 255, 255, 0.02),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.icon-btn-glass-neu:hover {
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 
+    6px 6px 16px rgba(0, 0, 0, 0.5),
+    -4px -4px 12px rgba(255, 255, 255, 0.025),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.icon-btn-glass-neu:active {
+  box-shadow: 
+    inset 3px 3px 8px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.02);
+  transform: translateY(1px);
+}
+
+/* ============================================================
    GRADIENT TYPOGRAPHY - Headline Emphasis
    One-word gradient highlights, hero text systems
    ============================================================ */
