@@ -23,10 +23,26 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Deep Space Theme Colors
         background: {
           primary: 'rgb(var(--background-primary) / <alpha-value>)',
           surface: 'rgb(var(--background-surface) / <alpha-value>)',
           elevated: 'rgb(var(--background-elevated) / <alpha-value>)',
+        },
+        // Deep space specific colors
+        space: {
+          void: '#04060e',
+          deep: '#080c18',
+          nebula: '#0c1220',
+          star: '#ffffff',
+        },
+        // Neon accent colors for 2026 fintech
+        neon: {
+          cyan: '#00e5ff',
+          green: '#00ff88',
+          purple: '#8b5cf6',
+          pink: '#f472b6',
+          gold: '#fbbf24',
         },
         primary: {
           DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
@@ -67,6 +83,12 @@ const config: Config = {
         },
         border: 'rgb(var(--border) / <alpha-value>)',
         ring: 'rgb(var(--ring) / <alpha-value>)',
+        // Glass colors
+        glass: {
+          light: 'rgba(255, 255, 255, 0.06)',
+          medium: 'rgba(255, 255, 255, 0.1)',
+          border: 'rgba(255, 255, 255, 0.08)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
@@ -82,9 +104,10 @@ const config: Config = {
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
-        '5xl': ['3rem', { lineHeight: '1' }],
-        '6xl': ['3.75rem', { lineHeight: '1' }],
+        '5xl': ['3rem', { lineHeight: '1.1' }],
+        '6xl': ['3.75rem', { lineHeight: '1.1' }],
         '7xl': ['4.5rem', { lineHeight: '1' }],
+        '8xl': ['6rem', { lineHeight: '1' }],
       },
       spacing: {
         '0': '0px',
@@ -104,10 +127,19 @@ const config: Config = {
         '32': '128px',
       },
       backgroundImage: {
-        'gradient-primary': 'linear-gradient(135deg, rgb(var(--accent)) 0%, rgb(var(--primary)) 100%)',
-        'gradient-success': 'linear-gradient(135deg, rgb(var(--success)) 0%, rgb(var(--primary)) 100%)',
-        'gradient-danger': 'linear-gradient(135deg, rgb(var(--danger)) 0%, rgb(var(--destructive)) 100%)',
+        // Deep space gradients
+        'gradient-space': 'linear-gradient(180deg, #04060e 0%, #080c18 50%, #0c1220 100%)',
+        'gradient-nebula': 'radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0, 229, 255, 0.08) 0%, transparent 50%), radial-gradient(ellipse 60% 80% at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%)',
+        'gradient-aurora': 'radial-gradient(ellipse 150% 80% at 50% 120%, rgba(0, 229, 255, 0.15) 0%, transparent 50%), radial-gradient(ellipse 100% 60% at 30% -20%, rgba(139, 92, 246, 0.12) 0%, transparent 50%)',
+        // Neon gradients
+        'gradient-primary': 'linear-gradient(135deg, #00e5ff 0%, #00ff88 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #00e5ff 0%, #8b5cf6 100%)',
+        'gradient-success': 'linear-gradient(135deg, #00ff88 0%, #22c55e 100%)',
+        'gradient-danger': 'linear-gradient(135deg, #ff4757 0%, #ef4444 100%)',
+        'gradient-gold': 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        // Glass gradient
+        'gradient-glass': 'linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-in-out',
@@ -120,8 +152,11 @@ const config: Config = {
         'ticker': 'ticker 30s linear infinite',
         'float': 'float 6s ease-in-out infinite',
         'grid': 'grid 18s linear infinite',
-        aurora: 'aurora 60s linear infinite',
-        spotlight: 'spotlight 2s ease 0.75s 1 forwards',
+        'aurora': 'aurora 60s linear infinite',
+        'spotlight': 'spotlight 2s ease 0.75s 1 forwards',
+        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+        'gradient-shift': 'gradientShift 8s ease-in-out infinite',
+        'starfield': 'starfield 100s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -161,33 +196,51 @@ const config: Config = {
           '100%': { transform: 'translateY(60px)' },
         },
         aurora: {
-          from: {
-            backgroundPosition: '50% 50%, 50% 50%',
-          },
-          to: {
-            backgroundPosition: '350% 50%, 350% 50%',
-          },
+          from: { backgroundPosition: '50% 50%, 50% 50%' },
+          to: { backgroundPosition: '350% 50%, 350% 50%' },
         },
         spotlight: {
-          '0%': {
-            opacity: '0',
-            transform: 'translate(-72%, -62%) scale(0.5)',
-          },
-          '100%': {
-            opacity: '1',
-            transform: 'translate(-50%, -40%) scale(1)',
-          },
+          '0%': { opacity: '0', transform: 'translate(-72%, -62%) scale(0.5)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, -40%) scale(1)' },
+        },
+        glowPulse: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(0, 229, 255, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(0, 229, 255, 0.6)' },
+        },
+        gradientShift: {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+        starfield: {
+          '0%': { transform: 'translateY(0)' },
+          '100%': { transform: 'translateY(-2000px)' },
         },
       },
       backdropBlur: {
         xs: '2px',
+        '2xl': '40px',
       },
       boxShadow: {
-        'glow-sm': '0 0 10px rgba(59, 130, 246, 0.3)',
-        'glow-md': '0 0 20px rgba(59, 130, 246, 0.4)',
-        'glow-lg': '0 0 30px rgba(59, 130, 246, 0.5)',
-        'glow-success': '0 0 20px rgba(16, 185, 129, 0.4)',
-        'glow-danger': '0 0 20px rgba(239, 68, 68, 0.4)',
+        // Glow shadows
+        'glow-sm': '0 0 10px rgba(0, 229, 255, 0.3)',
+        'glow-md': '0 0 20px rgba(0, 229, 255, 0.4)',
+        'glow-lg': '0 0 30px rgba(0, 229, 255, 0.5)',
+        'glow-success': '0 0 20px rgba(0, 255, 136, 0.4)',
+        'glow-danger': '0 0 20px rgba(255, 71, 87, 0.4)',
+        // Glass shadows
+        'glass': '0 8px 32px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.06)',
+        'glass-lg': '0 16px 48px -8px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)',
+        // Soft elevation
+        'soft': '0 4px 24px -1px rgba(0, 0, 0, 0.3)',
+        'soft-lg': '0 8px 32px -4px rgba(0, 0, 0, 0.4), 0 16px 64px -8px rgba(0, 0, 0, 0.2)',
+        // Inner glow
+        'inner-glow': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
+        'inner-glow-lg': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.06)',
+      },
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '2.5rem',
       },
     },
   },
