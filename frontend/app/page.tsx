@@ -176,10 +176,10 @@ function TradingTerminalPreview() {
       {/* Multi-color glow effect */}
       <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 via-accent/20 to-purple-500/20 blur-3xl" />
       
-      <div className="relative overflow-hidden rounded-3xl border border-border/30 bg-gradient-to-br from-background-elevated/95 to-background-surface/95 p-1 shadow-[0_20px_70px_-15px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+      <div className="glass-neu-elevated relative overflow-hidden p-1">
         <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[rgb(8,12,24)] to-[rgb(14,19,33)]">
           {/* Terminal Header */}
-          <div className="flex items-center justify-between border-b border-border/40 bg-background-surface/50 px-6 py-4 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-white/5 bg-background-surface/30 px-6 py-4 backdrop-blur-sm">
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
                 <div className="h-3 w-3 rounded-full bg-danger/80" />
@@ -191,9 +191,9 @@ function TradingTerminalPreview() {
                 <span>SwingAI Trading Terminal</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-border/40 bg-background-primary/60 px-3 py-1.5">
-              <Pulse className="h-3 w-3 animate-pulse text-success" />
-              <span className="text-xs font-medium text-text-secondary">Live Market Data</span>
+            <div className="badge-glass-neu-success flex items-center gap-2">
+              <Pulse className="h-3 w-3 animate-pulse" />
+              <span className="text-xs font-medium">Live Market Data</span>
             </div>
           </div>
 
@@ -211,7 +211,7 @@ function TradingTerminalPreview() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.2 }}
-                className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-5 backdrop-blur-sm"
+                className="stat-glass-neu border border-primary/10"
               >
                 <div className="mb-2 flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
@@ -244,7 +244,7 @@ function TradingTerminalPreview() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.3 }}
-                className="rounded-xl border border-success/20 bg-gradient-to-br from-success/10 to-transparent p-5 backdrop-blur-sm"
+                className="stat-glass-neu border border-success/10"
               >
                 <div className="mb-2 flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/20">
