@@ -136,7 +136,7 @@ function LiveMarketTicker() {
           key={stock.symbol}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex min-w-[180px] items-center gap-3 rounded-lg border border-border/40 bg-background-surface/60 px-4 py-3 backdrop-blur-xl"
+          className="glass-neu flex min-w-[180px] items-center gap-3 px-4 py-3"
         >
           <div className="flex-1">
             <div className="text-xs font-semibold text-text-secondary">{stock.symbol}</div>
